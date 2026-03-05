@@ -1,0 +1,452 @@
+You are a senior React Native engineer.
+
+Build a production-ready Expo React Native mobile application UI for a VTU platform called "TopupAfrica".
+
+The mobile app must replicate the design and structure of the existing website:
+https://topupafrica.online
+
+The focus for now is ONLY UI using mock data. No backend integration yet.
+
+Use modern best practices and clean architecture.
+
+--------------------------------------------------
+
+TECH STACK
+
+Use the following libraries:
+
+- Expo (latest)
+- React Native
+- Expo Router (for navigation)
+- NativeWind (TailwindCSS for React Native)
+- Zustand (state management)
+- Axios (prepare API layer even if mocked)
+- FlashList from @shopify/flash-list
+- react-native-safe-area-context
+- expo-font
+- expo-haptics
+- expo-linear-gradient
+- react-native-reanimated
+- react-native-gesture-handler
+- react-native-modal
+
+--------------------------------------------------
+
+PROJECT STRUCTURE
+
+Create a clean scalable folder structure.
+
+app/
+  (auth)/
+      login.tsx
+      signup.tsx
+      reset-password.tsx
+
+  (tabs)/
+      dashboard.tsx
+      services.tsx
+      add-money.tsx
+      referrals.tsx
+      transactions.tsx
+      settings.tsx
+
+  transaction/
+      [id].tsx
+
+components/
+    ui/
+        Button.tsx
+        Card.tsx
+        Input.tsx
+        Modal.tsx
+        TransactionCard.tsx
+        ServiceCard.tsx
+        EmptyState.tsx
+        Header.tsx
+
+    services/
+        AirtimeModal.tsx
+        DataModal.tsx
+        CableModal.tsx
+        ElectricityModal.tsx
+        PinModal.tsx
+        SuccessModal.tsx
+        ErrorModal.tsx
+
+store/
+    authStore.ts
+    walletStore.ts
+    transactionStore.ts
+    themeStore.ts
+
+hooks/
+    useRefresh.ts
+
+lib/
+    axios.ts
+    mockData.ts
+
+constants/
+    colors.ts
+    services.ts
+
+--------------------------------------------------
+
+STYLING SYSTEM
+
+Use NativeWind for styling.
+
+Use the following design tokens from the website:
+
+Primary color:
+purple -> blue gradient
+
+Tailwind tokens:
+
+--primary: hsl(262 83% 58%)
+--background
+--foreground
+--card
+--border
+--muted
+
+Dark mode must be supported.
+
+Implement a theme store using Zustand to toggle dark/light mode.
+
+Use this font:
+
+Nunito
+
+Load with expo-font.
+
+--------------------------------------------------
+
+GLOBAL UI DESIGN
+
+Follow the design of the website.
+
+Design rules:
+
+• gradient purple → blue headers
+• rounded cards
+• subtle shadows
+• glassmorphism cards
+• large readable typography
+• clean VTU fintech layout
+
+Cards should look modern and soft.
+
+--------------------------------------------------
+
+SCREEN REQUIREMENTS
+
+--------------------------------------
+
+1️⃣ DASHBOARD PAGE
+
+Must contain:
+
+Wallet Balance Card
+
+Example:
+₦445.00
+
+Button:
+Fund Wallet
+
+Quick Services Section
+
+Grid with 6 services:
+
+Airtime
+Data
+Electricity
+Cable TV
+Bills
+Internet
+
+Recent Transactions Section
+
+Use FlashList.
+
+Show maximum 3 transactions.
+
+If empty:
+Show empty state illustration + message.
+
+When transaction is clicked:
+
+Navigate to:
+
+/transaction/[id]
+
+--------------------------------------
+
+2️⃣ SERVICES PAGE
+
+Display cards for:
+
+Airtime
+Data
+Electricity
+Cable
+Internet
+Bills
+
+When user taps a service:
+
+Open purchase modal.
+
+Modal fields example:
+
+Phone Number
+Network
+Amount
+
+Then show PIN modal:
+
+Enter 4 digit transaction pin.
+
+If incorrect:
+Show Invalid Pin modal.
+
+If correct:
+
+Mock request and show:
+
+Success modal OR Error modal.
+
+--------------------------------------
+
+3️⃣ ADD MONEY PAGE
+
+Initially show:
+
+Input for BVN submission.
+
+Button:
+Create Virtual Account.
+
+After success:
+
+Display a card showing:
+
+Bank Name:
+Paystack-Titan
+
+Account Number:
+9754720931
+
+Account Name:
+Ezeorah Confidence - TopupAfrica
+
+Add copy button for account number.
+
+Below show:
+
+Recent Deposit Transactions
+
+Maximum 5 transactions.
+
+Handle empty state.
+
+--------------------------------------
+
+4️⃣ REFERRALS PAGE
+
+Show 4 cards:
+
+Total Referrals
+Total Earnings
+Referral Bonus
+Pending Bonus
+
+Section:
+
+Referral Link
+
+Include:
+
+Copy button
+
+Section:
+
+List of referred users.
+
+--------------------------------------
+
+5️⃣ TRANSACTIONS PAGE
+
+Show ALL transactions.
+
+Use FlashList.
+
+Implement pagination (mock).
+
+Handle empty state.
+
+Transaction card shows:
+
+Type
+Amount
+Status
+Date
+
+--------------------------------------
+
+6️⃣ TRANSACTION DETAILS PAGE
+
+Show cards containing:
+
+Transaction ID
+Service Type
+Amount
+Status
+Phone Number
+Provider
+Date
+Reference
+
+Design cards similar to fintech receipt UI.
+
+--------------------------------------
+
+7️⃣ SETTINGS PAGE
+
+Sections:
+
+Profile Update
+
+Inputs:
+
+First Name
+Last Name
+Email
+Phone
+
+Buttons:
+
+Update Profile
+
+Change Password
+
+Fields:
+
+Current Password
+New Password
+
+Show success or error modal.
+
+Reset Transaction PIN
+
+User must enter account password.
+
+If correct:
+
+Allow new PIN creation.
+
+Also include:
+
+Theme Toggle (Dark / Light)
+
+Logout button.
+
+--------------------------------------
+
+8️⃣ AUTH SCREENS
+
+Login
+Signup
+Reset Password
+
+Follow same design style.
+
+Signup fields:
+
+First Name
+Last Name
+Username
+Email
+Phone
+Password
+Confirm Password
+Referral Code (optional)
+
+Use gradient submit buttons.
+
+--------------------------------------
+
+STATE MANAGEMENT
+
+Use Zustand stores for:
+
+authStore
+
+user
+login
+logout
+
+walletStore
+
+balance
+virtualAccount
+
+transactionStore
+
+transactions
+recentTransactions
+
+themeStore
+
+darkMode toggle
+
+--------------------------------------
+
+UX REQUIREMENTS
+
+Implement:
+
+Pull to refresh
+
+Loading states
+
+Empty states
+
+Error states
+
+Smooth animations
+
+Use FlashList instead of FlatList.
+
+Use SafeAreaView everywhere.
+
+--------------------------------------------------
+
+MOCK DATA
+
+Create mock data for:
+
+Transactions
+Referrals
+Wallet
+Virtual Account
+Services
+
+--------------------------------------------------
+
+OUTPUT
+
+Generate a fully runnable Expo project.
+
+Include:
+
+package.json
+app structure
+NativeWind config
+tailwind.config.js
+babel.config.js
+
+Add clear comments explaining key parts of the code.
+
+Ensure the UI is modern, responsive, and visually close to the TopupAfrica website.
