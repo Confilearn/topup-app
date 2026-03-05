@@ -2,10 +2,11 @@ import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { Tabs } from 'expo-router';
 import { NativeTabs, Icon, Label } from 'expo-router/unstable-native-tabs';
 import { BlurView } from 'expo-blur';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { COLORS } from '@/constants/colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useColors } from '@/hooks/useTheme';
 
 function NativeTabLayout() {
   return (
@@ -23,11 +24,11 @@ function NativeTabLayout() {
         <Label>Add Money</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="transactions">
-        <Icon sf={{ default: 'list.bullet.rectangle', selected: 'list.bullet.rectangle.fill' }} />
+        <Icon sf={{ default: 'clock.arrow.circlepath', selected: 'clock.arrow.circlepath' }} />
         <Label>History</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="settings">
-        <Icon sf={{ default: 'person', selected: 'person.fill' }} />
+        <Icon sf={{ default: 'person.circle', selected: 'person.circle.fill' }} />
         <Label>Profile</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
@@ -35,70 +36,95 @@ function NativeTabLayout() {
 }
 
 function ClassicTabLayout() {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
   const isIOS = Platform.OS === 'ios';
   const isWeb = Platform.OS === 'web';
+
+  const TAB_HEIGHT = 60;
+  const BOTTOM_INSET = isWeb ? 34 : insets.bottom;
+
+  const TABS = [
+    { name: 'dashboard', icon: 'home', activeIcon: 'home', label: 'Home' },
+    { name: 'services', icon: 'grid-outline', activeIcon: 'grid', label: 'Services' },
+    { name: 'add-money', icon: 'add-circle-outline', activeIcon: 'add-circle', label: 'Add Money' },
+    { name: 'transactions', icon: 'time-outline', activeIcon: 'time', label: 'History' },
+    { name: 'settings', icon: 'person-outline', activeIcon: 'person', label: 'Profile' },
+  ];
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: COLORS.purple,
-        tabBarInactiveTintColor: COLORS.textMuted,
         tabBarStyle: {
           position: 'absolute',
-          backgroundColor: isIOS ? 'transparent' : COLORS.bgCard,
-          borderTopWidth: isWeb ? 1 : 0,
-          borderTopColor: COLORS.border,
+          height: TAB_HEIGHT + BOTTOM_INSET,
+          backgroundColor: 'transparent',
+          borderTopWidth: 0,
           elevation: 0,
-          ...(isWeb ? { height: 84 } : {}),
         },
-        tabBarLabelStyle: {
-          fontFamily: 'Nunito_600SemiBold',
-          fontSize: 11,
+        tabBarBackground: () => (
+          <>
+            {isIOS ? (
+              <BlurView
+                intensity={90}
+                tint={colors.bgPrimary === '#080818' ? 'dark' : 'light'}
+                style={[StyleSheet.absoluteFill, styles.tabBarBg]}
+              />
+            ) : (
+              <View
+                style={[
+                  StyleSheet.absoluteFill,
+                  styles.tabBarBg,
+                  {
+                    backgroundColor: colors.bgCard,
+                    borderTopWidth: 1,
+                    borderTopColor: colors.border,
+                  },
+                ]}
+              />
+            )}
+          </>
+        ),
+        tabBarItemStyle: {
+          paddingVertical: 6,
         },
-        tabBarBackground: () =>
-          isIOS ? (
-            <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
-          ) : isWeb ? (
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: COLORS.bgCard }]} />
-          ) : null,
+        tabBarLabel: () => null,
       }}
     >
-      <Tabs.Screen
-        name="dashboard"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="services"
-        options={{
-          title: 'Services',
-          tabBarIcon: ({ color, size }) => <Ionicons name="grid" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="add-money"
-        options={{
-          title: 'Add Money',
-          tabBarIcon: ({ color, size }) => <Ionicons name="add-circle" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="transactions"
-        options={{
-          title: 'History',
-          tabBarIcon: ({ color, size }) => <Ionicons name="list" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
-        }}
-      />
+      {TABS.map((tab) => (
+        <Tabs.Screen
+          key={tab.name}
+          name={tab.name}
+          options={{
+            tabBarIcon: ({ focused, color }) => (
+              <View style={styles.tabItem}>
+                <View
+                  style={[
+                    styles.tabIconWrap,
+                    focused && { backgroundColor: `${colors.purple}20` },
+                  ]}
+                >
+                  <Ionicons
+                    name={(focused ? tab.activeIcon : tab.icon) as any}
+                    size={22}
+                    color={focused ? colors.purple : colors.textMuted}
+                  />
+                </View>
+                <Text
+                  style={[
+                    styles.tabLabel,
+                    { color: focused ? colors.purple : colors.textMuted },
+                    focused && { fontFamily: 'Nunito_700Bold' },
+                  ]}
+                >
+                  {tab.label}
+                </Text>
+              </View>
+            ),
+          }}
+        />
+      ))}
     </Tabs>
   );
 }
@@ -109,3 +135,26 @@ export default function TabLayout() {
   }
   return <ClassicTabLayout />;
 }
+
+const styles = StyleSheet.create({
+  tabBarBg: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    overflow: 'hidden',
+  },
+  tabItem: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  tabIconWrap: {
+    width: 40,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabLabel: {
+    fontSize: 10,
+    fontFamily: 'Nunito_500Medium',
+  },
+});

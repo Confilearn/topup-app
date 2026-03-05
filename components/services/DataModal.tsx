@@ -1,34 +1,19 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Modal,
-  Pressable,
-  ScrollView,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '@/constants/colors';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { useColors } from '@/hooks/useTheme';
 import { Input } from '@/components/ui/Input';
-import { GradientButton } from '@/components/ui/GradientButton';
-import { PinModal } from './PinModal';
-import { ResultModal } from './ResultModal';
+import { ServiceSheetModal } from './ServiceSheetModal';
 import { NETWORKS, DATA_PLANS } from '@/lib/mockData';
 import { useWalletStore } from '@/store/walletStore';
 import { useTransactionStore } from '@/store/transactionStore';
 
-interface DataModalProps {
-  visible: boolean;
-  onClose: () => void;
-}
+interface DataModalProps { visible: boolean; onClose: () => void; }
 
 export function DataModal({ visible, onClose }: DataModalProps) {
+  const colors = useColors();
   const [network, setNetwork] = useState('MTN');
   const [phone, setPhone] = useState('');
   const [selectedPlan, setSelectedPlan] = useState(0);
-  const [showPin, setShowPin] = useState(false);
-  const [result, setResult] = useState<{ type: 'success' | 'error'; title: string; message: string } | null>(null);
-
   const { balance, deductBalance } = useWalletStore();
   const { addTransaction } = useTransactionStore();
 
@@ -37,135 +22,84 @@ export function DataModal({ visible, onClose }: DataModalProps) {
   const fee = plan ? Math.round(plan.amount * 0.1) : 0;
   const total = plan ? plan.amount + fee : 0;
 
-  const handleProceed = () => {
-    if (!phone || !plan) return;
-    setShowPin(true);
-  };
-
-  const handlePinSuccess = () => {
-    setShowPin(false);
-    if (balance < total) {
-      setResult({ type: 'error', title: 'Insufficient Balance', message: 'Your wallet balance is insufficient.' });
-      return;
-    }
+  const handleConfirmed = () => {
+    if (balance < total || !plan) return;
     deductBalance(total);
     addTransaction({
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-      type: 'data',
-      provider: network,
-      amount: total,
-      fee,
-      status: 'completed',
+      type: 'data', provider: network, amount: total, fee, status: 'completed',
       date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) + ' at ' + new Date().toLocaleTimeString(),
-      phone,
-      reference: 'TXN-' + Date.now(),
-      description: `${network} ${plan.label}`,
-      recipient: phone,
+      phone, reference: 'TXN-' + Date.now(), description: `${network} ${plan.label}`, recipient: phone,
     });
-    setResult({ type: 'success', title: 'Data Purchased!', message: `${plan.label} has been activated on ${phone}.` });
+    setPhone('');
+    setSelectedPlan(0);
+    setNetwork('MTN');
   };
 
   const handleClose = () => { setPhone(''); setSelectedPlan(0); setNetwork('MTN'); onClose(); };
-  const handleResultClose = () => { setResult(null); handleClose(); };
 
   return (
-    <>
-      <Modal visible={visible && !showPin && !result} animationType="slide" transparent onRequestClose={handleClose}>
-        <Pressable style={styles.overlay} onPress={handleClose}>
-          <Pressable style={styles.sheet} onPress={() => {}}>
-            <View style={styles.handle} />
-            <View style={styles.headerRow}>
-              <Text style={styles.title}>Data Bundles</Text>
-              <Pressable onPress={handleClose}>
-                <Ionicons name="close" size={24} color={COLORS.textMuted} />
-              </Pressable>
+    <ServiceSheetModal
+      visible={visible}
+      onClose={handleClose}
+      title="Data Bundles"
+      subtitle="Purchase data plans for all networks"
+      proceedLabel={plan ? `Purchase ${plan.label} for ₦${total.toLocaleString()}` : 'Select a Plan'}
+      proceedDisabled={!phone || !plan}
+      onProceed={() => !!(phone && plan)}
+      onConfirmed={handleConfirmed}
+    >
+      {() => (
+        <>
+          <View>
+            <Text style={[styles.label, { color: colors.textPrimary }]}>Select Network</Text>
+            <View style={styles.chipRow}>
+              {NETWORKS.map((n) => (
+                <Pressable key={n} style={[styles.chip, { backgroundColor: colors.bgCardAlt, borderColor: colors.border }, network === n && { backgroundColor: `${colors.purple}25`, borderColor: colors.purple }]} onPress={() => { setNetwork(n); setSelectedPlan(0); }}>
+                  <Text style={[styles.chipText, { color: network === n ? colors.purpleLight : colors.textMuted }]}>{n}</Text>
+                </Pressable>
+              ))}
             </View>
-            <Text style={styles.subtitle}>Purchase data plans for all networks</Text>
+          </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
-              <View style={styles.form}>
-                <View>
-                  <Text style={styles.label}>Select Network</Text>
-                  <View style={styles.networkRow}>
-                    {NETWORKS.map((n) => (
-                      <Pressable
-                        key={n}
-                        style={[styles.networkBtn, network === n && styles.networkBtnActive]}
-                        onPress={() => { setNetwork(n); setSelectedPlan(0); }}
-                      >
-                        <Text style={[styles.networkText, network === n && styles.networkTextActive]}>{n}</Text>
-                      </Pressable>
-                    ))}
+          <Input label="Phone Number" placeholder="08012345678" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+
+          <View>
+            <Text style={[styles.label, { color: colors.textPrimary }]}>Select Data Plan</Text>
+            <View style={styles.planList}>
+              {plans.map((p, i) => (
+                <Pressable key={i} style={[styles.planItem, { backgroundColor: colors.bgCardAlt, borderColor: colors.border }, selectedPlan === i && { borderColor: colors.purple, backgroundColor: `${colors.purple}15` }]} onPress={() => setSelectedPlan(i)}>
+                  <View>
+                    <Text style={[styles.planName, { color: colors.textPrimary }]}>{p.label}</Text>
+                    <Text style={[styles.planValidity, { color: colors.textMuted }]}>{p.validity}</Text>
                   </View>
-                </View>
+                  <Text style={[styles.planPrice, { color: selectedPlan === i ? colors.purpleLight : colors.textPrimary }]}>₦{p.amount.toLocaleString()}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
 
-                <Input label="Phone Number" placeholder="08012345678" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-
-                <View>
-                  <Text style={styles.label}>Select Data Plan</Text>
-                  <View style={styles.planList}>
-                    {plans.map((p, i) => (
-                      <Pressable
-                        key={i}
-                        style={[styles.planItem, selectedPlan === i && styles.planItemActive]}
-                        onPress={() => setSelectedPlan(i)}
-                      >
-                        <View>
-                          <Text style={styles.planName}>{p.label}</Text>
-                          <Text style={styles.planValidity}>{p.validity}</Text>
-                        </View>
-                        <Text style={[styles.planPrice, selectedPlan === i && { color: COLORS.purpleLight }]}>
-                          ₦{p.amount.toLocaleString()}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                </View>
-
-                {plan && (
-                  <View style={styles.feeBox}>
-                    <Ionicons name="information-circle-outline" size={16} color={COLORS.warning} />
-                    <Text style={styles.feeText}>10% service fee: ₦{fee} | Total: ₦{total.toLocaleString()}</Text>
-                  </View>
-                )}
-
-                <GradientButton
-                  title={plan ? `Purchase ${plan.label} for ₦${total.toLocaleString()}` : 'Select a Plan'}
-                  onPress={handleProceed}
-                  disabled={!phone || !plan}
-                />
-              </View>
-            </ScrollView>
-          </Pressable>
-        </Pressable>
-      </Modal>
-
-      <PinModal visible={showPin} onClose={() => setShowPin(false)} onSuccess={handlePinSuccess} />
-      {result && <ResultModal visible={!!result} type={result.type} title={result.title} message={result.message} onClose={handleResultClose} />}
-    </>
+          {plan && (
+            <View style={[styles.feeBox, { backgroundColor: `${colors.warning}12`, borderColor: `${colors.warning}30` }]}>
+              <Text style={[styles.feeText, { color: colors.warning }]}>10% fee: ₦{fee} · Total: ₦{total.toLocaleString()}</Text>
+            </View>
+          )}
+        </>
+      )}
+    </ServiceSheetModal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: COLORS.bgSecondary, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 24, paddingBottom: 40, maxHeight: '90%' },
-  handle: { width: 40, height: 4, backgroundColor: COLORS.border, borderRadius: 2, marginTop: 12, marginBottom: 20, alignSelf: 'center' },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  title: { color: COLORS.textPrimary, fontSize: 20, fontFamily: 'Nunito_700Bold' },
-  subtitle: { color: COLORS.textMuted, fontSize: 13, fontFamily: 'Nunito_400Regular', marginBottom: 20 },
-  form: { gap: 18, paddingBottom: 24 },
-  label: { color: COLORS.textPrimary, fontSize: 14, fontFamily: 'Nunito_600SemiBold', marginBottom: 8 },
-  networkRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  networkBtn: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8, backgroundColor: COLORS.bgCard, borderWidth: 1, borderColor: COLORS.border },
-  networkBtnActive: { backgroundColor: `${COLORS.purple}30`, borderColor: COLORS.purple },
-  networkText: { color: COLORS.textMuted, fontSize: 13, fontFamily: 'Nunito_600SemiBold' },
-  networkTextActive: { color: COLORS.purpleLight },
+  label: { fontSize: 14, fontFamily: 'Nunito_600SemiBold', marginBottom: 8 },
+  chipRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  chip: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 10, borderWidth: 1 },
+  chipText: { fontSize: 13, fontFamily: 'Nunito_600SemiBold' },
   planList: { gap: 8 },
-  planItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14, backgroundColor: COLORS.bgCard, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border },
-  planItemActive: { borderColor: COLORS.purple, backgroundColor: `${COLORS.purple}15` },
-  planName: { color: COLORS.textPrimary, fontSize: 14, fontFamily: 'Nunito_600SemiBold' },
-  planValidity: { color: COLORS.textMuted, fontSize: 12, fontFamily: 'Nunito_400Regular' },
-  planPrice: { color: COLORS.textPrimary, fontSize: 15, fontFamily: 'Nunito_700Bold' },
-  feeBox: { flexDirection: 'row', gap: 8, backgroundColor: `${COLORS.warning}15`, padding: 12, borderRadius: 10, borderWidth: 1, borderColor: `${COLORS.warning}40`, alignItems: 'flex-start' },
-  feeText: { color: COLORS.warning, fontSize: 12, fontFamily: 'Nunito_500Medium', flex: 1 },
+  planItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14, borderRadius: 12, borderWidth: 1 },
+  planName: { fontSize: 14, fontFamily: 'Nunito_600SemiBold' },
+  planValidity: { fontSize: 12, fontFamily: 'Nunito_400Regular' },
+  planPrice: { fontSize: 15, fontFamily: 'Nunito_700Bold' },
+  feeBox: { padding: 12, borderRadius: 10, borderWidth: 1 },
+  feeText: { fontSize: 12, fontFamily: 'Nunito_500Medium' },
 });

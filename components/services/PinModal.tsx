@@ -1,16 +1,16 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Modal,
   Pressable,
-  TextInput,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { COLORS } from '@/constants/colors';
+import { useColors } from '@/hooks/useTheme';
 import { MOCK_PIN } from '@/lib/mockData';
 
 interface PinModalProps {
@@ -21,33 +21,45 @@ interface PinModalProps {
 }
 
 export function PinModal({ visible, onClose, onSuccess, title = 'Enter Transaction PIN' }: PinModalProps) {
+  const colors = useColors();
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const inputRef = useRef<TextInput>(null);
+  const [shakeKey, setShakeKey] = useState(0);
 
-  const handleChange = (text: string) => {
-    if (text.length > 4) return;
-    setPin(text);
+  const handleDigit = (digit: string) => {
+    if (pin.length >= 4 || loading) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const newPin = pin + digit;
+    setPin(newPin);
     setError('');
-    if (text.length === 4) {
-      handleSubmit(text);
+    if (newPin.length === 4) {
+      handleSubmit(newPin);
     }
+  };
+
+  const handleDelete = () => {
+    if (loading) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setPin((p) => p.slice(0, -1));
+    setError('');
   };
 
   const handleSubmit = async (value: string) => {
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
+    await new Promise((r) => setTimeout(r, 700));
     setLoading(false);
 
     if (value === MOCK_PIN) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setPin('');
+      setError('');
       onSuccess();
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError('Invalid PIN. Please try again.');
+      setError('Incorrect PIN. Try again.');
       setPin('');
+      setShakeKey((k) => k + 1);
     }
   };
 
@@ -57,56 +69,92 @@ export function PinModal({ visible, onClose, onSuccess, title = 'Enter Transacti
     onClose();
   };
 
+  const KEYPAD = [
+    ['1', '2', '3'],
+    ['4', '5', '6'],
+    ['7', '8', '9'],
+    ['', '0', 'del'],
+  ];
+
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
       <Pressable style={styles.overlay} onPress={handleClose}>
-        <Pressable style={styles.sheet} onPress={() => {}}>
-          <View style={styles.handle} />
+        <Pressable style={[styles.sheet, { backgroundColor: colors.bgSecondary }]} onPress={() => {}}>
+          <View style={[styles.handle, { backgroundColor: colors.border }]} />
 
+          {/* Header */}
           <View style={styles.header}>
-            <View style={styles.lockIcon}>
-              <Ionicons name="lock-closed" size={24} color={COLORS.purple} />
+            <View style={[styles.lockIcon, { backgroundColor: `${colors.purple}20` }]}>
+              <Ionicons name="lock-closed" size={24} color={colors.purple} />
             </View>
-            <Text style={styles.title}>{title}</Text>
-            <Text style={styles.subtitle}>Enter your 4-digit PIN to confirm</Text>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
+            <Text style={[styles.subtitle, { color: colors.textMuted }]}>Enter your 4-digit PIN</Text>
           </View>
 
-          <TextInput
-            ref={inputRef}
-            value={pin}
-            onChangeText={handleChange}
-            keyboardType="number-pad"
-            maxLength={4}
-            secureTextEntry
-            style={styles.hiddenInput}
-            autoFocus
-          />
+          {/* PIN dots */}
+          <View style={styles.dotsRow} key={shakeKey}>
+            {[0, 1, 2, 3].map((i) => (
+              <View
+                key={i}
+                style={[
+                  styles.dot,
+                  {
+                    borderColor: error ? colors.error : pin.length > i ? colors.purple : colors.border,
+                    backgroundColor: pin.length > i ? colors.purple : 'transparent',
+                  },
+                ]}
+              />
+            ))}
+          </View>
 
-          <Pressable onPress={() => inputRef.current?.focus()}>
-            <View style={styles.dotsRow}>
-              {[0, 1, 2, 3].map((i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.dot,
-                    pin.length > i && styles.dotFilled,
-                    error && styles.dotError,
-                  ]}
-                />
-              ))}
-            </View>
-          </Pressable>
+          {error ? <Text style={[styles.error, { color: colors.error }]}>{error}</Text> : null}
+          {loading ? <ActivityIndicator color={colors.purple} style={{ marginVertical: 8 }} /> : null}
 
-          {error ? (
-            <Text style={styles.error}>{error}</Text>
-          ) : null}
+          {/* Hint */}
+          <Text style={[styles.hint, { color: colors.textMuted }]}>Demo PIN: {MOCK_PIN}</Text>
 
-          {loading && <ActivityIndicator color={COLORS.purple} style={{ marginTop: 16 }} />}
-
-          <Text style={styles.hint}>Use PIN: {MOCK_PIN} (demo)</Text>
+          {/* On-screen keypad */}
+          <View style={styles.keypad}>
+            {KEYPAD.map((row, ri) => (
+              <View key={ri} style={styles.keyRow}>
+                {row.map((key, ki) => {
+                  if (key === '') {
+                    return <View key={ki} style={styles.keyEmpty} />;
+                  }
+                  if (key === 'del') {
+                    return (
+                      <Pressable
+                        key={ki}
+                        style={({ pressed }) => [
+                          styles.key,
+                          { backgroundColor: pressed ? `${colors.purple}20` : `${colors.bgCardAlt}` },
+                        ]}
+                        onPress={handleDelete}
+                      >
+                        <Ionicons name="backspace-outline" size={22} color={colors.textPrimary} />
+                      </Pressable>
+                    );
+                  }
+                  return (
+                    <Pressable
+                      key={ki}
+                      style={({ pressed }) => [
+                        styles.key,
+                        { backgroundColor: pressed ? `${colors.purple}20` : colors.bgCardAlt },
+                      ]}
+                      onPress={() => handleDigit(key)}
+                      disabled={loading}
+                    >
+                      <Text style={[styles.keyText, { color: colors.textPrimary }]}>{key}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ))}
+          </View>
 
           <Pressable style={styles.cancelBtn} onPress={handleClose}>
-            <Text style={styles.cancelText}>Cancel</Text>
+            <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Cancel</Text>
           </Pressable>
         </Pressable>
       </Pressable>
@@ -121,17 +169,15 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: COLORS.bgSecondary,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     paddingHorizontal: 24,
-    paddingBottom: 48,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
     alignItems: 'center',
   },
   handle: {
     width: 40,
     height: 4,
-    backgroundColor: COLORS.border,
     borderRadius: 2,
     marginTop: 12,
     marginBottom: 24,
@@ -139,72 +185,75 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     gap: 8,
-    marginBottom: 32,
+    marginBottom: 28,
   },
   lockIcon: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: `${COLORS.purple}20`,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   title: {
-    color: COLORS.textPrimary,
     fontSize: 20,
     fontFamily: 'Nunito_700Bold',
   },
   subtitle: {
-    color: COLORS.textMuted,
     fontSize: 14,
     fontFamily: 'Nunito_400Regular',
-  },
-  hiddenInput: {
-    position: 'absolute',
-    opacity: 0,
-    height: 1,
-    width: 1,
   },
   dotsRow: {
     flexDirection: 'row',
     gap: 20,
-    marginBottom: 20,
+    marginBottom: 12,
   },
   dot: {
     width: 18,
     height: 18,
     borderRadius: 9,
     borderWidth: 2,
-    borderColor: COLORS.border,
-    backgroundColor: 'transparent',
-  },
-  dotFilled: {
-    backgroundColor: COLORS.purple,
-    borderColor: COLORS.purple,
-  },
-  dotError: {
-    borderColor: COLORS.error,
   },
   error: {
-    color: COLORS.error,
     fontSize: 13,
     fontFamily: 'Nunito_500Medium',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   hint: {
-    color: COLORS.textMuted,
     fontSize: 12,
     fontFamily: 'Nunito_400Regular',
-    marginTop: 8,
+    marginBottom: 20,
+  },
+  keypad: {
+    width: '100%',
+    gap: 12,
+    marginBottom: 16,
+  },
+  keyRow: {
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'center',
+  },
+  key: {
+    width: 88,
+    height: 64,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  keyEmpty: {
+    width: 88,
+    height: 64,
+  },
+  keyText: {
+    fontSize: 24,
+    fontFamily: 'Nunito_600SemiBold',
   },
   cancelBtn: {
-    marginTop: 20,
     paddingVertical: 12,
     paddingHorizontal: 32,
   },
   cancelText: {
-    color: COLORS.textSecondary,
     fontSize: 15,
     fontFamily: 'Nunito_600SemiBold',
   },

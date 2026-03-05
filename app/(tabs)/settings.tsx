@@ -13,7 +13,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import { COLORS } from '@/constants/colors';
+import { useColors } from '@/hooks/useTheme';
+import { AppHeader } from '@/components/ui/AppHeader';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeStore } from '@/store/themeStore';
 import { Input } from '@/components/ui/Input';
@@ -23,6 +24,7 @@ import { PinModal } from '@/components/services/PinModal';
 import { MOCK_PASSWORD } from '@/lib/mockData';
 
 export default function SettingsScreen() {
+  const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user, logout, updateProfile } = useAuthStore();
   const { isDark, toggleTheme } = useThemeStore();
@@ -35,7 +37,6 @@ export default function SettingsScreen() {
   });
 
   const [pwForm, setPwForm] = useState({ current: '', newPw: '', confirm: '' });
-  const [newPin, setNewPin] = useState('');
   const [verifyPassword, setVerifyPassword] = useState('');
   const [showPinModal, setShowPinModal] = useState(false);
   const [showResetPin, setShowResetPin] = useState(false);
@@ -50,7 +51,7 @@ export default function SettingsScreen() {
     await new Promise((r) => setTimeout(r, 800));
     updateProfile(profileForm);
     setLoading(false);
-    setResult({ type: 'success', title: 'Profile Updated!', message: 'Your profile information has been updated successfully.' });
+    setResult({ type: 'success', title: 'Profile Updated!', message: 'Your profile has been updated successfully.' });
   };
 
   const handleChangePassword = async () => {
@@ -70,6 +71,7 @@ export default function SettingsScreen() {
       return;
     }
     setShowResetPin(false);
+    setVerifyPassword('');
     setShowPinModal(true);
   };
 
@@ -80,36 +82,26 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingBottom: bottomPadding }]}>
+    <View style={[styles.container, { backgroundColor: colors.bgPrimary, paddingBottom: bottomPadding }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scroll, { paddingTop: topPadding }]}
       >
-        <View style={styles.topBar}>
-          <Pressable>
-            <Ionicons name="menu" size={26} color={COLORS.textPrimary} />
-          </Pressable>
-          <Text style={styles.brandName}>TopupAfrica</Text>
-          <Pressable>
-            <Ionicons name="sunny" size={22} color={COLORS.warning} />
-          </Pressable>
-        </View>
-
-        <Text style={styles.title}>Profile & Settings</Text>
-        <Text style={styles.subtitle}>Manage your account settings and security</Text>
+        <AppHeader />
+        <Text style={[styles.title, { color: colors.textPrimary }]}>Profile & Settings</Text>
+        <Text style={[styles.subtitle, { color: colors.textMuted }]}>Manage your account settings and security</Text>
 
         {/* Personal Info */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           <View style={styles.cardHeader}>
             <LinearGradient colors={['#7C3AED', '#3B82F6']} style={styles.headerIcon}>
               <Ionicons name="person" size={20} color="#fff" />
             </LinearGradient>
             <View>
-              <Text style={styles.cardTitle}>Personal Information</Text>
-              <Text style={styles.cardSubtitle}>Update your personal details</Text>
+              <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Personal Information</Text>
+              <Text style={[styles.cardSubtitle, { color: colors.textMuted }]}>Update your personal details</Text>
             </View>
           </View>
-
           <View style={styles.form}>
             <Input label="First Name" value={profileForm.firstName} onChangeText={(v) => setProfileForm((f) => ({ ...f, firstName: v }))} />
             <Input label="Last Name" value={profileForm.lastName} onChangeText={(v) => setProfileForm((f) => ({ ...f, lastName: v }))} />
@@ -119,58 +111,40 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* Security Settings */}
-        <View style={styles.card}>
+        {/* Security */}
+        <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           <View style={styles.cardHeader}>
-            <View style={[styles.headerIcon, { backgroundColor: `${COLORS.error}30` }]}>
-              <Ionicons name="shield" size={20} color={COLORS.error} />
+            <View style={[styles.headerIcon, { backgroundColor: `${colors.error}25` }]}>
+              <Ionicons name="shield" size={20} color={colors.error} />
             </View>
             <View>
-              <Text style={styles.cardTitle}>Security Settings</Text>
-              <Text style={styles.cardSubtitle}>Manage your account security</Text>
+              <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Security Settings</Text>
+              <Text style={[styles.cardSubtitle, { color: colors.textMuted }]}>Manage your account security</Text>
             </View>
           </View>
-
           <View style={styles.securityList}>
-            <Pressable
-              style={styles.secItem}
-              onPress={() => setShowPinModal(true)}
-            >
-              <Ionicons name="lock-closed-outline" size={20} color={COLORS.textSecondary} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.secItemTitle}>Transaction PIN</Text>
-                <Text style={styles.secItemSub}>Set up your 4-digit PIN</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
-            </Pressable>
-
-            <View style={styles.divider} />
-
-            <Pressable style={styles.secItem} onPress={() => {}}>
-              <Ionicons name="mail-outline" size={20} color={COLORS.textSecondary} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.secItemTitle}>Change Password</Text>
-                <Text style={styles.secItemSub}>Update your login password</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
-            </Pressable>
-
-            <View style={styles.divider} />
-
-            <Pressable style={styles.secItem} onPress={() => setShowResetPin(true)}>
-              <Ionicons name="lock-open-outline" size={20} color={COLORS.textSecondary} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.secItemTitle}>Reset Transaction PIN</Text>
-                <Text style={styles.secItemSub}>Reset your PIN using current password</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
-            </Pressable>
+            {[
+              { icon: 'lock-closed-outline', title: 'Transaction PIN', sub: 'Set up your 4-digit PIN', onPress: () => setShowPinModal(true) },
+              { icon: 'lock-open-outline', title: 'Reset Transaction PIN', sub: 'Reset your PIN using current password', onPress: () => setShowResetPin(true) },
+            ].map((item, i) => (
+              <React.Fragment key={item.title}>
+                {i > 0 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
+                <Pressable style={({ pressed }) => [styles.secItem, pressed && { opacity: 0.7 }]} onPress={item.onPress}>
+                  <Ionicons name={item.icon as any} size={20} color={colors.textSecondary} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.secItemTitle, { color: colors.textPrimary }]}>{item.title}</Text>
+                    <Text style={[styles.secItemSub, { color: colors.textMuted }]}>{item.sub}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                </Pressable>
+              </React.Fragment>
+            ))}
           </View>
         </View>
 
-        {/* Change Password Form */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Change Password</Text>
+        {/* Change Password */}
+        <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+          <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Change Password</Text>
           <View style={styles.form}>
             <Input label="Current Password" placeholder="Enter current password" value={pwForm.current} onChangeText={(v) => setPwForm((f) => ({ ...f, current: v }))} isPassword />
             <Input label="New Password" placeholder="Enter new password" value={pwForm.newPw} onChangeText={(v) => setPwForm((f) => ({ ...f, newPw: v }))} isPassword />
@@ -180,41 +154,44 @@ export default function SettingsScreen() {
         </View>
 
         {/* Account Info */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Account Information</Text>
-          <Text style={styles.cardSubtitle}>Your account details</Text>
+        <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+          <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Account Information</Text>
           <View style={styles.infoList}>
             <View style={styles.infoItem}>
-              <Ionicons name="calendar-outline" size={18} color={COLORS.textMuted} />
+              <Ionicons name="calendar-outline" size={18} color={colors.textMuted} />
               <View>
-                <Text style={styles.infoLabel}>Date Joined</Text>
-                <Text style={styles.infoValue}>{user?.joinDate}</Text>
+                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Date Joined</Text>
+                <Text style={[styles.infoValue, { color: colors.textPrimary }]}>{user?.joinDate}</Text>
               </View>
             </View>
             <View style={styles.infoItem}>
-              <Ionicons name="shield-checkmark-outline" size={18} color={COLORS.success} />
+              <Ionicons name="shield-checkmark-outline" size={18} color={colors.success} />
               <View>
-                <Text style={styles.infoLabel}>Account Status</Text>
-                <Text style={[styles.infoValue, { color: COLORS.success }]}>{user?.accountStatus}</Text>
+                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Account Status</Text>
+                <Text style={[styles.infoValue, { color: colors.success }]}>{user?.accountStatus}</Text>
               </View>
             </View>
           </View>
         </View>
 
         {/* Theme */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           <View style={styles.themeRow}>
-            <View style={styles.themeLeft}>
-              <Ionicons name={isDark ? 'moon' : 'sunny'} size={20} color={isDark ? COLORS.blue : COLORS.warning} />
-              <View>
-                <Text style={styles.cardTitle}>Dark Mode</Text>
-                <Text style={styles.cardSubtitle}>{isDark ? 'Dark theme enabled' : 'Light theme enabled'}</Text>
-              </View>
+            <View style={[styles.themeIcon, { backgroundColor: isDark ? `${colors.blue}20` : `${colors.warning}20` }]}>
+              <Ionicons name={isDark ? 'moon' : 'sunny'} size={20} color={isDark ? colors.blue : colors.warning} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
+                {isDark ? 'Dark Mode' : 'Light Mode'}
+              </Text>
+              <Text style={[styles.cardSubtitle, { color: colors.textMuted }]}>
+                {isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+              </Text>
             </View>
             <Switch
               value={isDark}
               onValueChange={() => { toggleTheme(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-              trackColor={{ false: COLORS.border, true: COLORS.purple }}
+              trackColor={{ false: colors.border, true: colors.purple }}
               thumbColor="#fff"
             />
           </View>
@@ -222,87 +199,66 @@ export default function SettingsScreen() {
 
         {/* Logout */}
         <Pressable
-          style={({ pressed }) => [styles.logoutBtn, pressed && { opacity: 0.8 }]}
+          style={({ pressed }) => [
+            styles.logoutBtn,
+            { backgroundColor: pressed ? `${colors.error}25` : `${colors.error}12`, borderColor: `${colors.error}35` },
+          ]}
           onPress={handleLogout}
         >
-          <Ionicons name="log-out-outline" size={20} color={COLORS.error} />
-          <Text style={styles.logoutText}>Logout</Text>
+          <Ionicons name="log-out-outline" size={20} color={colors.error} />
+          <Text style={[styles.logoutText, { color: colors.error }]}>Logout</Text>
         </Pressable>
       </ScrollView>
 
-      {/* Reset PIN with password verify */}
+      {/* Reset PIN verify overlay */}
       {showResetPin && (
         <View style={styles.overlay}>
-          <View style={styles.verifyCard}>
-            <Text style={styles.verifyTitle}>Verify Password</Text>
-            <Text style={styles.verifySub}>Enter your account password to reset PIN</Text>
-            <Input
-              label="Password"
-              placeholder="Enter your password"
-              value={verifyPassword}
-              onChangeText={setVerifyPassword}
-              isPassword
-            />
+          <View style={[styles.verifyCard, { backgroundColor: colors.bgCard }]}>
+            <Text style={[styles.verifyTitle, { color: colors.textPrimary }]}>Verify Password</Text>
+            <Text style={[styles.verifySub, { color: colors.textMuted }]}>Enter your account password to reset PIN</Text>
+            <Input label="Password" placeholder="Enter your password (hint: password123)" value={verifyPassword} onChangeText={setVerifyPassword} isPassword />
             <View style={styles.verifyBtns}>
-              <GradientButton title="Verify" onPress={handleVerifyForPinReset} variant="outline" style={{ flex: 1 }} />
-              <GradientButton title="Cancel" onPress={() => setShowResetPin(false)} variant="ghost" style={{ flex: 1 }} />
+              <GradientButton title="Verify & Reset" onPress={handleVerifyForPinReset} style={{ flex: 1 }} />
+              <GradientButton title="Cancel" onPress={() => { setShowResetPin(false); setVerifyPassword(''); }} variant="ghost" style={{ flex: 1 }} />
             </View>
           </View>
         </View>
       )}
 
-      <PinModal
-        visible={showPinModal}
-        title="Set Transaction PIN"
-        onClose={() => setShowPinModal(false)}
-        onSuccess={() => {
-          setShowPinModal(false);
-          setResult({ type: 'success', title: 'PIN Set!', message: 'Your transaction PIN has been set successfully.' });
-        }}
-      />
+      <PinModal visible={showPinModal} title="Set Transaction PIN" onClose={() => setShowPinModal(false)} onSuccess={() => { setShowPinModal(false); setResult({ type: 'success', title: 'PIN Set!', message: 'Your transaction PIN has been set successfully.' }); }} />
 
-      {result && (
-        <ResultModal
-          visible={!!result}
-          type={result.type}
-          title={result.title}
-          message={result.message}
-          onClose={() => setResult(null)}
-        />
-      )}
+      {result && <ResultModal visible={!!result} type={result.type} title={result.title} message={result.message} onClose={() => setResult(null)} />}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bgPrimary },
-  scroll: { paddingHorizontal: 20, paddingBottom: 100 },
-  topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-  brandName: { color: COLORS.purple, fontSize: 20, fontFamily: 'Nunito_800ExtraBold' },
-  title: { color: COLORS.textPrimary, fontSize: 28, fontFamily: 'Nunito_800ExtraBold', marginBottom: 4 },
-  subtitle: { color: COLORS.textMuted, fontSize: 14, fontFamily: 'Nunito_400Regular', marginBottom: 24 },
-  card: { backgroundColor: COLORS.bgCard, borderRadius: 18, padding: 20, gap: 16, borderWidth: 1, borderColor: COLORS.border, marginBottom: 16 },
+  container: { flex: 1 },
+  scroll: { paddingHorizontal: 20, paddingBottom: 110 },
+  title: { fontSize: 28, fontFamily: 'Nunito_800ExtraBold', marginBottom: 4 },
+  subtitle: { fontSize: 14, fontFamily: 'Nunito_400Regular', marginBottom: 24 },
+  card: { borderRadius: 18, padding: 20, gap: 16, borderWidth: 1, marginBottom: 16 },
   cardHeader: { flexDirection: 'row', gap: 12, alignItems: 'center' },
   headerIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  cardTitle: { color: COLORS.textPrimary, fontSize: 17, fontFamily: 'Nunito_700Bold' },
-  cardSubtitle: { color: COLORS.textMuted, fontSize: 12, fontFamily: 'Nunito_400Regular' },
+  cardTitle: { fontSize: 17, fontFamily: 'Nunito_700Bold' },
+  cardSubtitle: { fontSize: 12, fontFamily: 'Nunito_400Regular' },
   form: { gap: 14 },
-  securityList: { gap: 0 },
+  securityList: {},
   secItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
-  secItemTitle: { color: COLORS.textPrimary, fontSize: 15, fontFamily: 'Nunito_600SemiBold' },
-  secItemSub: { color: COLORS.textMuted, fontSize: 12, fontFamily: 'Nunito_400Regular' },
-  divider: { height: 1, backgroundColor: COLORS.border },
+  secItemTitle: { fontSize: 15, fontFamily: 'Nunito_600SemiBold' },
+  secItemSub: { fontSize: 12, fontFamily: 'Nunito_400Regular' },
+  divider: { height: 1 },
   infoList: { gap: 14 },
   infoItem: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
-  infoLabel: { color: COLORS.textMuted, fontSize: 12, fontFamily: 'Nunito_400Regular' },
-  infoValue: { color: COLORS.textPrimary, fontSize: 15, fontFamily: 'Nunito_600SemiBold' },
-  themeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  themeLeft: { flexDirection: 'row', gap: 12, alignItems: 'center' },
-  logoutBtn: { flexDirection: 'row', gap: 10, alignItems: 'center', justifyContent: 'center', padding: 18, backgroundColor: `${COLORS.error}15`, borderRadius: 14, borderWidth: 1, borderColor: `${COLORS.error}35`, marginBottom: 20 },
-  logoutText: { color: COLORS.error, fontSize: 16, fontFamily: 'Nunito_700Bold' },
+  infoLabel: { fontSize: 12, fontFamily: 'Nunito_400Regular' },
+  infoValue: { fontSize: 15, fontFamily: 'Nunito_600SemiBold' },
+  themeRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  themeIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  logoutBtn: { flexDirection: 'row', gap: 10, alignItems: 'center', justifyContent: 'center', padding: 18, borderRadius: 14, borderWidth: 1, marginBottom: 20 },
+  logoutText: { fontSize: 16, fontFamily: 'Nunito_700Bold' },
   overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center', padding: 24, zIndex: 100 },
-  verifyCard: { backgroundColor: COLORS.bgCard, borderRadius: 24, padding: 24, width: '100%', gap: 14 },
-  verifyTitle: { color: COLORS.textPrimary, fontSize: 20, fontFamily: 'Nunito_700Bold' },
-  verifySub: { color: COLORS.textMuted, fontSize: 13, fontFamily: 'Nunito_400Regular' },
+  verifyCard: { borderRadius: 24, padding: 24, width: '100%', gap: 14 },
+  verifyTitle: { fontSize: 20, fontFamily: 'Nunito_700Bold' },
+  verifySub: { fontSize: 13, fontFamily: 'Nunito_400Regular' },
   verifyBtns: { flexDirection: 'row', gap: 10 },
 });
