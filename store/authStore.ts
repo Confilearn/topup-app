@@ -1,52 +1,253 @@
-import { create } from 'zustand';
-import { MOCK_USER } from '@/lib/mockData';
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { authAPI, initializeAuth, TokenStorage } from "@/lib/api";
 
+// User interface - matches server response structure
 interface User {
   id: string;
-  firstName: string;
-  lastName: string;
   username: string;
-  email: string;
-  phone: string;
-  joinDate: string;
-  accountStatus: string;
-  referralCode: string;
-  referralLink: string;
+  role: string;
+  status: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
 }
 
+// Auth state interface
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
+
+  // Actions
   login: (email: string, password: string) => Promise<boolean>;
-  signup: (data: Partial<User> & { password: string }) => Promise<boolean>;
-  logout: () => void;
-  updateProfile: (data: Partial<User>) => void;
+  signup: (userData: {
+    firstName: string;
+    lastName: string;
+    username: string;
+    email: string;
+    password: string;
+    phone?: string;
+    referredBy?: string;
+  }) => Promise<boolean>;
+  logout: () => Promise<void>;
+  updatePassword: (
+    currentPassword: string,
+    newPassword: string,
+  ) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (token: string, newPassword: string) => Promise<void>;
+  clearError: () => void;
+  checkAuth: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  isAuthenticated: false,
-
-  login: async (email: string, _password: string) => {
-    // Mock login - accept any credentials
-    await new Promise((r) => setTimeout(r, 800));
-    set({ user: MOCK_USER, isAuthenticated: true });
-    return true;
+// AsyncStorage storage for Zustand (mobile-only)
+const mobileStorage = {
+  getItem: async (name: string) => {
+    try {
+      return await AsyncStorage.getItem(name);
+    } catch {
+      return null;
+    }
   },
-
-  signup: async (_data) => {
-    await new Promise((r) => setTimeout(r, 1000));
-    set({ user: MOCK_USER, isAuthenticated: true });
-    return true;
+  setItem: async (name: string, value: string) => {
+    try {
+      await AsyncStorage.setItem(name, value);
+    } catch {
+      // Silently fail
+    }
   },
-
-  logout: () => {
-    set({ user: null, isAuthenticated: false });
+  removeItem: async (name: string) => {
+    try {
+      await AsyncStorage.removeItem(name);
+    } catch {
+      // Silently fail
+    }
   },
+};
 
-  updateProfile: (data) => {
-    set((state) => ({
-      user: state.user ? { ...state.user, ...data } : null,
-    }));
-  },
-}));
+// Create auth store with persistence
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set, get) => ({
+      // Initial state
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      error: null,
+
+      // Login action
+      login: async (email: string, password: string) => {
+        set({ isLoading: true, error: null });
+
+        try {
+          const response = await authAPI.login(email, password);
+
+          set({
+            user: response.user,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          });
+
+          return true;
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : "Login failed";
+          set({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+            error: errorMessage,
+          });
+          return false;
+        }
+      },
+
+      // Signup action
+      signup: async (userData) => {
+        set({ isLoading: true, error: null });
+
+        try {
+          await authAPI.register(userData);
+
+          // Note: Server doesn't return token on signup, user needs to login
+          set({
+            isLoading: false,
+            error: null,
+          });
+
+          return true;
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : "Registration failed";
+          set({
+            isLoading: false,
+            error: errorMessage,
+          });
+          return false;
+        }
+      },
+
+      // Logout action
+      logout: async () => {
+        set({ isLoading: true });
+
+        try {
+          await authAPI.logout();
+        } catch (error) {
+          console.error("Logout error:", error);
+        } finally {
+          set({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+            error: null,
+          });
+        }
+      },
+
+      // Update password action
+      updatePassword: async (currentPassword: string, newPassword: string) => {
+        set({ isLoading: true, error: null });
+
+        try {
+          await authAPI.updatePassword(currentPassword, newPassword);
+          set({ isLoading: false, error: null });
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : "Password update failed";
+          set({ isLoading: false, error: errorMessage });
+          throw error;
+        }
+      },
+
+      // Forgot password action
+      forgotPassword: async (email: string) => {
+        set({ isLoading: true, error: null });
+
+        try {
+          await authAPI.forgotPassword(email);
+          set({ isLoading: false, error: null });
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : "Failed to send reset email";
+          set({ isLoading: false, error: errorMessage });
+          throw error;
+        }
+      },
+
+      // Reset password action
+      resetPassword: async (token: string, newPassword: string) => {
+        set({ isLoading: true, error: null });
+
+        try {
+          await authAPI.resetPassword(token, newPassword);
+          set({ isLoading: false, error: null });
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : "Password reset failed";
+          set({ isLoading: false, error: errorMessage });
+          throw error;
+        }
+      },
+
+      // Clear error action
+      clearError: () => {
+        set({ error: null });
+      },
+
+      // Check authentication status
+      checkAuth: async () => {
+        set({ isLoading: true, error: null });
+
+        try {
+          const { isAuthenticated } = await initializeAuth();
+
+          set({
+            isAuthenticated,
+            isLoading: false,
+            error: null,
+          });
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : "Auth check failed";
+          set({
+            isAuthenticated: false,
+            isLoading: false,
+            error: errorMessage,
+          });
+        }
+      },
+    }),
+    {
+      name: "auth-storage",
+      storage: createJSONStorage(() => mobileStorage),
+      // Only persist essential auth data
+      partialize: (state) => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+      }),
+      // Handle rehydration on app start
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          // Verify token is still valid
+          TokenStorage.hasToken().then((hasToken) => {
+            if (!hasToken && state.isAuthenticated) {
+              // Clear invalid auth state
+              useAuthStore.setState({
+                user: null,
+                isAuthenticated: false,
+              });
+            }
+          });
+        }
+      },
+    },
+  ),
+);
