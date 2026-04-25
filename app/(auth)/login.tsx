@@ -6,6 +6,7 @@ import {
   ScrollView,
   Pressable,
   Platform,
+  TouchableOpacity,
 } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -22,22 +23,52 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const { login } = useAuthStore();
+  const [rememberMe, setRememberMe] = useState(false);
+  const { login, isLoading, error: authError, clearError } = useAuthStore();
   const insets = useSafeAreaInsets();
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      setError("Please fill in all fields");
+    // Clear any existing errors
+    setError("");
+    clearError();
+
+    // Validate email format
+    if (!email) {
+      setError("Please enter your email address");
       return;
     }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    // Validate password
+    if (!password) {
+      setError("Please enter your password");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+
     setLoading(true);
-    setError("");
-    const success = await login(email, password);
-    setLoading(false);
-    if (success) {
-      router.replace("/(tabs)/dashboard");
-    } else {
-      setError("Invalid email or password");
+
+    try {
+      const success = await login(email, password);
+
+      if (success) {
+        // Login successful - navigate to dashboard
+        router.replace("/(tabs)/dashboard");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("Login failed. Please check your credentials and try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -95,7 +126,8 @@ export default function LoginScreen() {
           </Text>
 
           <View style={styles.form}>
-            {error ? (
+            {/* Show auth store errors or local errors */}
+            {authError || error ? (
               <View
                 style={[
                   styles.errorBanner,
@@ -107,7 +139,7 @@ export default function LoginScreen() {
               >
                 <Ionicons name="alert-circle" size={16} color={colors.error} />
                 <Text style={[styles.errorText, { color: colors.error }]}>
-                  {error}
+                  {authError || error}
                 </Text>
               </View>
             ) : null}
@@ -128,20 +160,51 @@ export default function LoginScreen() {
               isPassword
             />
 
-            <Pressable
-              onPress={() => router.push("/(auth)/reset-password")}
-              style={styles.forgotBtn}
-            >
-              <Text style={[styles.forgotText, { color: colors.purpleLight }]}>
-                Forgot password?
-              </Text>
-            </Pressable>
+            {/* Remember Me & Forgot Password */}
+            <View style={styles.formActions}>
+              <TouchableOpacity
+                style={styles.rememberMeContainer}
+                onPress={() => setRememberMe(!rememberMe)}
+              >
+                <View
+                  style={[
+                    styles.checkbox,
+                    {
+                      borderColor: colors.border,
+                      backgroundColor: rememberMe
+                        ? colors.purple
+                        : "transparent",
+                    },
+                  ]}
+                >
+                  {rememberMe && (
+                    <Ionicons name="checkmark" size={12} color="white" />
+                  )}
+                </View>
+                <Text
+                  style={[styles.rememberMeText, { color: colors.textMuted }]}
+                >
+                  Remember me
+                </Text>
+              </TouchableOpacity>
+
+              <Pressable
+                onPress={() => router.push("/(auth)/reset-password")}
+                style={styles.forgotBtn}
+              >
+                <Text
+                  style={[styles.forgotText, { color: colors.purpleLight }]}
+                >
+                  Forgot password?
+                </Text>
+              </Pressable>
+            </View>
 
             <GradientButton
               title="Sign In"
               onPress={handleLogin}
-              loading={loading}
-              disabled={loading}
+              loading={loading || isLoading}
+              disabled={loading || isLoading}
             />
 
             <View style={styles.footer}>
@@ -192,6 +255,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   errorText: { fontSize: 13, fontFamily: "Nunito_500Medium", flex: 1 },
+  formActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  rememberMeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  checkbox: {
+    width: 18,
+    height: 18,
+    borderRadius: 4,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rememberMeText: { fontSize: 14, fontFamily: "Nunito_400Regular" },
   forgotBtn: { alignSelf: "flex-end" },
   forgotText: { fontSize: 14, fontFamily: "Nunito_600SemiBold" },
   footer: { flexDirection: "row", justifyContent: "center", marginTop: 4 },
