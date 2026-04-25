@@ -10,7 +10,6 @@
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/splash-icon.jpg",
-
       "resizeMode": "contain",
       "backgroundColor": "#7c3aed"
     },
@@ -37,6 +36,14 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {
+        "origin": "https://replit.com/"
+      },
+      "eas": {
+        "projectId": "7710d023-190d-47de-8c46-ac60f0548667"
+      }
     }
   }
 }
