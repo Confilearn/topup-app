@@ -161,3 +161,13 @@ export const initializeAuth = async () => {
     return { isAuthenticated: false, user: null };
   }
 };
+
+// Generic API request method for user endpoints
+export const userAPI = {
+  // Get user profile - matches GET /user/profile/:id
+  getProfile: async (userId: string) => {
+    return apiRequest(`/user/profile/${userId}`, {
+      method: "GET",
+    });
+  },
+};

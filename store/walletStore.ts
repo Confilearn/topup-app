@@ -1,5 +1,6 @@
-import { create } from 'zustand';
-import { MOCK_WALLET } from '@/lib/mockData';
+import { create } from "zustand";
+import { MOCK_WALLET } from "@/lib/mockData";
+import { useUserStore } from "./userStore";
 
 interface VirtualAccount {
   bankName: string;
@@ -15,6 +16,7 @@ interface WalletState {
   createVirtualAccount: (bvn: string) => Promise<boolean>;
   deductBalance: (amount: number) => void;
   addBalance: (amount: number) => void;
+  syncBalanceFromProfile: () => void; // New method to sync from user profile
 }
 
 export const useWalletStore = create<WalletState>((set) => ({
@@ -37,5 +39,13 @@ export const useWalletStore = create<WalletState>((set) => ({
 
   addBalance: (amount: number) => {
     set((state) => ({ balance: state.balance + amount }));
+  },
+
+  // Sync balance from user profile data
+  syncBalanceFromProfile: () => {
+    const userProfile = useUserStore.getState().userProfile;
+    if (userProfile?.balance !== undefined) {
+      set({ balance: userProfile.balance });
+    }
   },
 }));

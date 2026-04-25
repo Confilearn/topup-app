@@ -19,6 +19,7 @@ import { useColors } from "@/hooks/useTheme";
 import { useAuthStore } from "@/store/authStore";
 import { useWalletStore } from "@/store/walletStore";
 import { useThemeStore } from "@/store/themeStore";
+import { useUserStore } from "@/store/userStore";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.8, 320);
@@ -49,8 +50,9 @@ export function Drawer({ visible, onClose }: DrawerProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuthStore();
-  const { balance } = useWalletStore();
+  const { balance, syncBalanceFromProfile } = useWalletStore();
   const { isDark, toggleTheme } = useThemeStore();
+  const { userProfile } = useUserStore();
 
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -86,6 +88,13 @@ export function Drawer({ visible, onClose }: DrawerProps) {
       ]).start();
     }
   }, [visible]);
+
+  // Sync wallet balance when user profile is updated
+  useEffect(() => {
+    if (userProfile?.balance !== undefined) {
+      syncBalanceFromProfile();
+    }
+  }, [userProfile?.balance, syncBalanceFromProfile]);
 
   const navigate = (route: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -148,22 +157,38 @@ export function Drawer({ visible, onClose }: DrawerProps) {
           >
             <View style={styles.avatarWrap}>
               <Text style={styles.avatarText}>
-                {user?.firstName?.[0]}
-                {user?.lastName?.[0]}
+                {userProfile?.firstName?.[0] || user?.firstName?.[0]}
+                {userProfile?.lastName?.[0] || user?.lastName?.[0]}
               </Text>
             </View>
             <Text style={styles.userName}>
-              {user?.firstName} {user?.lastName}
+              {userProfile?.firstName || user?.firstName}{" "}
+              {userProfile?.lastName || user?.lastName}
             </Text>
-            <Text style={styles.userEmail}>{user?.email}</Text>
+            <Text style={styles.userEmail}>
+              {userProfile?.email || user?.email}
+            </Text>
             <View style={styles.balancePill}>
               <Ionicons
                 name="wallet-outline"
                 size={14}
                 color="rgba(255,255,255,0.9)"
               />
-              <Text style={styles.balanceText}>₦{balance.toFixed(2)}</Text>
+              <Text style={styles.balanceText}>
+                ₦{(userProfile?.balance || balance).toFixed(2)}
+              </Text>
             </View>
+            {/* Show verification status if available */}
+            {userProfile?.isVerified && (
+              <View style={styles.verifiedPill}>
+                <Ionicons
+                  name="checkmark-circle"
+                  size={12}
+                  color="rgba(34, 197, 94, 0.9)"
+                />
+                <Text style={styles.verifiedPillText}>Verified</Text>
+              </View>
+            )}
           </LinearGradient>
 
           {/* Nav Items */}
@@ -478,5 +503,21 @@ const styles = StyleSheet.create({
   confirmBtnText: {
     fontSize: 15,
     fontFamily: "Nunito_600SemiBold",
+  },
+  verifiedPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: "rgba(34, 197, 94, 0.2)",
+    borderRadius: 12,
+    alignSelf: "flex-start",
+  },
+  verifiedPillText: {
+    fontSize: 11,
+    fontFamily: "Nunito_600SemiBold",
+    color: "rgba(34, 197, 94, 0.9)",
   },
 });
