@@ -13,6 +13,8 @@ interface User {
   lastName?: string;
   email?: string;
   phone?: string;
+  joinDate?: string;
+  accountStatus?: string;
 }
 
 // Auth state interface
@@ -38,6 +40,7 @@ interface AuthState {
     currentPassword: string,
     newPassword: string,
   ) => Promise<void>;
+  updateProfile: (data: Partial<User>) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, newPassword: string) => Promise<void>;
   clearError: () => void;
@@ -160,6 +163,28 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : "Password update failed";
+          set({ isLoading: false, error: errorMessage });
+          throw error;
+        }
+      },
+
+      // Update profile action
+      updateProfile: async (data: Partial<User>) => {
+        set({ isLoading: true, error: null });
+
+        try {
+          // Note: The server doesn't have a profile update endpoint yet
+          // For now, we'll just update the local state
+          // In production, this should call: await authAPI.updateProfile(data);
+
+          set((state) => ({
+            user: state.user ? { ...state.user, ...data } : null,
+            isLoading: false,
+            error: null,
+          }));
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : "Profile update failed";
           set({ isLoading: false, error: errorMessage });
           throw error;
         }
