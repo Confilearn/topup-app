@@ -149,14 +149,6 @@ export const authAPI = {
       body: JSON.stringify({ email }),
     });
   },
-
-  // Reset password - matches POST /api/auth/reset-password
-  resetPassword: async (token: string, newPassword: string) => {
-    return apiRequest("/auth/reset-password", {
-      method: "POST",
-      body: JSON.stringify({ token, newPassword }),
-    });
-  },
 };
 
 // Helper method to initialize auth state

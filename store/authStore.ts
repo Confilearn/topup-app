@@ -42,7 +42,6 @@ interface AuthState {
   ) => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
-  resetPassword: (token: string, newPassword: string) => Promise<void>;
   clearError: () => void;
   checkAuth: () => Promise<void>;
 }
@@ -207,34 +206,20 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      // Reset password action
-      resetPassword: async (token: string, newPassword: string) => {
-        set({ isLoading: true, error: null });
-
-        try {
-          await authAPI.resetPassword(token, newPassword);
-          set({ isLoading: false, error: null });
-        } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : "Password reset failed";
-          set({ isLoading: false, error: errorMessage });
-          throw error;
-        }
-      },
-
       // Clear error action
       clearError: () => {
         set({ error: null });
       },
 
-      // Check authentication status
+      // Check auth status
       checkAuth: async () => {
         set({ isLoading: true, error: null });
 
         try {
-          const { isAuthenticated } = await initializeAuth();
+          const { user, isAuthenticated } = await initializeAuth();
 
           set({
+            user,
             isAuthenticated,
             isLoading: false,
             error: null,
@@ -243,6 +228,7 @@ export const useAuthStore = create<AuthState>()(
           const errorMessage =
             error instanceof Error ? error.message : "Auth check failed";
           set({
+            user: null,
             isAuthenticated: false,
             isLoading: false,
             error: errorMessage,
