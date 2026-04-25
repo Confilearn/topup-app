@@ -1,26 +1,26 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // API Configuration - matches the web server structure
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://topupafrica.online';
-const API_PREFIX = process.env.EXPO_PUBLIC_API_PREFIX || '/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "https://topupafrica.online";
+const API_PREFIX = process.env.EXPO_PUBLIC_API_PREFIX || "/api";
 
 // Simple token storage for mobile app
 export const TokenStorage = {
   // Store JWT token
   setToken: async (token: string) => {
     try {
-      await AsyncStorage.setItem('auth_token', token);
+      await AsyncStorage.setItem("auth_token", token);
     } catch (error) {
-      console.error('Error storing token:', error);
+      console.error("Error storing token:", error);
     }
   },
 
   // Get JWT token
   getToken: async (): Promise<string | null> => {
     try {
-      return await AsyncStorage.getItem('auth_token');
+      return await AsyncStorage.getItem("auth_token");
     } catch (error) {
-      console.error('Error getting token:', error);
+      console.error("Error getting token:", error);
       return null;
     }
   },
@@ -28,9 +28,9 @@ export const TokenStorage = {
   // Clear token
   clearToken: async () => {
     try {
-      await AsyncStorage.removeItem('auth_token');
+      await AsyncStorage.removeItem("auth_token");
     } catch (error) {
-      console.error('Error clearing token:', error);
+      console.error("Error clearing token:", error);
     }
   },
 
@@ -44,16 +44,16 @@ export const TokenStorage = {
 // Simple API request wrapper for mobile app
 export const apiRequest = async (
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<any> => {
   const url = `${API_URL}${API_PREFIX}${endpoint}`;
-  
+
   // Get auth token
   const token = await TokenStorage.getToken();
-  
+
   // Prepare headers
   const headers: HeadersInit = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
     ...options.headers,
   };
 
@@ -71,40 +71,42 @@ export const apiRequest = async (
     // Handle HTTP errors
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      
+
       // If unauthorized, clear token and let app handle redirect
       if (response.status === 401) {
         await TokenStorage.clearToken();
       }
-      
-      throw new Error(errorData.message || `Request failed: ${response.status}`);
+
+      throw new Error(
+        errorData.message || `Request failed: ${response.status}`,
+      );
     }
 
     return await response.json();
   } catch (error) {
-    console.error('API request error:', error);
+    console.error("API request error:", error);
     throw error;
   }
 };
 
-// Authentication API calls - matches server routes
+// Authentication API calls - matches server routes from app.js
 export const authAPI = {
-  // Login - matches POST /api/login
+  // Login - matches POST /api/auth/login
   login: async (email: string, password: string) => {
-    const response = await apiRequest('/login', {
-      method: 'POST',
+    const response = await apiRequest("/auth/login", {
+      method: "POST",
       body: JSON.stringify({ email, password }),
     });
-    
+
     // Store token from response
     if (response.token) {
       await TokenStorage.setToken(response.token);
     }
-    
+
     return response;
   },
 
-  // Register - matches POST /api/signup
+  // Register - matches POST /api/auth/signup (but server uses /auth/signup route)
   register: async (userData: {
     firstName: string;
     lastName: string;
@@ -114,8 +116,8 @@ export const authAPI = {
     phone?: string;
     referredBy?: string;
   }) => {
-    return apiRequest('/signup', {
-      method: 'POST',
+    return apiRequest("/auth/signup", {
+      method: "POST",
       body: JSON.stringify(userData),
     });
   },
@@ -129,29 +131,29 @@ export const authAPI = {
   getCurrentUser: async () => {
     // Note: Server doesn't have /api/me endpoint yet
     // This would need to be added to the server
-    throw new Error('getCurrentUser endpoint not implemented on server');
+    throw new Error("getCurrentUser endpoint not implemented on server");
   },
 
-  // Update password - matches POST /api/update-password
+  // Update password - matches POST /api/auth/update-password
   updatePassword: async (currentPassword: string, newPassword: string) => {
-    return apiRequest('/update-password', {
-      method: 'POST',
+    return apiRequest("/auth/update-password", {
+      method: "POST",
       body: JSON.stringify({ currentPassword, newPassword }),
     });
   },
 
-  // Forgot password - matches POST /api/forgot-password
+  // Forgot password - matches POST /api/auth/forgot-password
   forgotPassword: async (email: string) => {
-    return apiRequest('/forgot-password', {
-      method: 'POST',
+    return apiRequest("/auth/forgot-password", {
+      method: "POST",
       body: JSON.stringify({ email }),
     });
   },
 
-  // Reset password - matches POST /api/reset-password
+  // Reset password - matches POST /api/auth/reset-password
   resetPassword: async (token: string, newPassword: string) => {
-    return apiRequest('/reset-password', {
-      method: 'POST',
+    return apiRequest("/auth/reset-password", {
+      method: "POST",
       body: JSON.stringify({ token, newPassword }),
     });
   },
@@ -163,7 +165,7 @@ export const initializeAuth = async () => {
     const hasToken = await TokenStorage.hasToken();
     return { isAuthenticated: hasToken, user: null };
   } catch (error) {
-    console.error('Auth initialization error:', error);
+    console.error("Auth initialization error:", error);
     return { isAuthenticated: false, user: null };
   }
 };
