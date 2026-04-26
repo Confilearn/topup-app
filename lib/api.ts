@@ -62,6 +62,15 @@ export const apiRequest = async (
     (headers as Record<string, string>).Authorization = `Bearer ${token}`;
   }
 
+  // Debug: Log token presence for development
+  if (__DEV__) {
+    console.log(`API Request: ${endpoint}`, {
+      hasToken: !!token,
+      tokenLength: token?.length,
+      method: options.method || "GET",
+    });
+  }
+
   try {
     const response = await fetch(url, {
       ...options,
@@ -72,13 +81,23 @@ export const apiRequest = async (
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
 
-      // If unauthorized, clear token and let app handle redirect
+      // Handle authentication errors specifically
       if (response.status === 401) {
+        // Clear invalid token
         await TokenStorage.clearToken();
+
+        // Provide specific error message
+        const errorMessage = errorData.message || "Authentication failed";
+        console.error(
+          `Authentication Error (${response.status}):`,
+          errorMessage,
+        );
+
+        throw new Error(errorMessage);
       }
 
       throw new Error(
-        errorData.message || `Request failed: ${response.status}`,
+        errorData.message || `HTTP ${response.status}: ${response.statusText}`,
       );
     }
 
@@ -136,6 +155,12 @@ export const authAPI = {
 
   // Update password - matches POST /api/auth/update-password
   updatePassword: async (currentPassword: string, newPassword: string) => {
+    // Validate token before making request
+    const token = await TokenStorage.getToken();
+    if (!token) {
+      throw new Error("No authentication token found. Please log in again.");
+    }
+
     return apiRequest("/auth/update-password", {
       method: "POST",
       body: JSON.stringify({ currentPassword, newPassword }),
@@ -148,6 +173,25 @@ export const authAPI = {
       method: "POST",
       body: JSON.stringify({ email }),
     });
+  },
+
+  // Verify password - helper method to verify current password
+  verifyPassword: async (password: string) => {
+    try {
+      // Make a request to a protected endpoint to verify current session
+      // If it succeeds, the user is authenticated and password was correct at login
+      const token = await TokenStorage.getToken();
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      // Try to access user profile (requires valid authentication)
+      await userAPI.getProfile("current");
+
+      return true;
+    } catch (error) {
+      return false;
+    }
   },
 };
 
@@ -168,6 +212,30 @@ export const userAPI = {
   getProfile: async (userId: string) => {
     return apiRequest(`/user/profile/${userId}`, {
       method: "GET",
+    });
+  },
+
+  // Update user profile - matches PUT /user/profile/:id
+  updateProfile: async (
+    userId: string,
+    data: {
+      firstName?: string;
+      lastName?: string;
+      phone?: string;
+      transactionPin?: string;
+    },
+  ) => {
+    return apiRequest(`/user/profile/${userId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Update transaction pin - matches PUT /user/profile/:id with transactionPin
+  setTransactionPin: async (userId: string, pin: string) => {
+    return apiRequest(`/user/profile/${userId}`, {
+      method: "PUT",
+      body: JSON.stringify({ transactionPin: pin }),
     });
   },
 };

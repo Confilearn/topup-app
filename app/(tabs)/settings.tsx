@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -17,23 +17,26 @@ import { useColors } from "@/hooks/useTheme";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { useAuthStore } from "@/store/authStore";
 import { useThemeStore } from "@/store/themeStore";
+import { useUserStore } from "@/store/userStore";
 import { Input } from "@/components/ui/Input";
 import { GradientButton } from "@/components/ui/GradientButton";
 import { ResultModal } from "@/components/services/ResultModal";
 import { PinModal } from "@/components/services/PinModal";
-import { MOCK_PASSWORD } from "@/lib/mockData";
+import { userAPI, authAPI } from "@/lib/api";
 
 export default function SettingsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { user, logout, updateProfile, updatePassword } = useAuthStore();
+  const { user, logout, updatePassword, updateProfile } = useAuthStore();
   const { isDark, toggleTheme } = useThemeStore();
+  const { userProfile, updateUserProfile, fetchUserProfile } = useUserStore();
 
+  // Initialize form with fetched user profile data, fallback to auth store
   const [profileForm, setProfileForm] = useState({
-    firstName: user?.firstName || "",
-    lastName: user?.lastName || "",
-    email: user?.email || "",
-    phone: user?.phone || "",
+    firstName: userProfile?.firstName || user?.firstName || "",
+    lastName: userProfile?.lastName || user?.lastName || "",
+    email: userProfile?.email || user?.email || "",
+    phone: userProfile?.phone || user?.phone || "",
   });
 
   const [pwForm, setPwForm] = useState({ current: "", newPw: "", confirm: "" });
@@ -41,6 +44,11 @@ export default function SettingsScreen() {
   const [showPinModal, setShowPinModal] = useState(false);
   const [showResetPin, setShowResetPin] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Transaction pin states
+  const [pinForm, setPinForm] = useState({ newPin: "", confirmPin: "" });
+  const [showSetPin, setShowSetPin] = useState(false);
+  const [hasTransactionPin, setHasTransactionPin] = useState(false);
   const [result, setResult] = useState<{
     type: "success" | "error";
     title: string;
@@ -51,20 +59,54 @@ export default function SettingsScreen() {
   const topPadding = insets.top + (Platform.OS === "web" ? 67 : 0);
   const bottomPadding = insets.bottom + (Platform.OS === "web" ? 34 : 0);
 
+  // Check if user has transaction pin
+  useEffect(() => {
+    setHasTransactionPin(!!userProfile?.transactionPin);
+  }, [userProfile?.transactionPin]);
+
   const handleUpdateProfile = async () => {
+    if (!user?.id) {
+      setResult({
+        type: "error",
+        title: "Update Failed",
+        message: "User ID not found. Please log in again.",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
+      // Call real API to update profile
+      await userAPI.updateProfile(user.id, {
+        firstName: profileForm.firstName,
+        lastName: profileForm.lastName,
+        phone: profileForm.phone,
+      });
+
+      // Update local state optimistically
       await updateProfile(profileForm);
+
+      // Update user profile store with the same data
+      updateUserProfile({
+        firstName: profileForm.firstName,
+        lastName: profileForm.lastName,
+        phone: profileForm.phone,
+      });
+
       setResult({
         type: "success",
         title: "Profile Updated!",
         message: "Your profile has been updated successfully.",
       });
     } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to update profile. Please try again.";
       setResult({
         type: "error",
         title: "Update Failed",
-        message: "Failed to update profile. Please try again.",
+        message: errorMessage,
       });
     } finally {
       setLoading(false);
@@ -104,11 +146,103 @@ export default function SettingsScreen() {
         message: "Your password has been updated successfully.",
       });
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to change password";
+
+      // Handle specific authentication errors
+      if (
+        errorMessage.includes("No authentication token") ||
+        errorMessage.includes("Authentication failed")
+      ) {
+        setResult({
+          type: "error",
+          title: "Authentication Required",
+          message: "Your session has expired. Please log in again.",
+        });
+      } else if (errorMessage.includes("Invalid token")) {
+        setResult({
+          type: "error",
+          title: "Session Expired",
+          message: "Your session has expired. Please log in again.",
+        });
+      } else {
+        setResult({
+          type: "error",
+          title: "Password Change Failed",
+          message:
+            errorMessage ||
+            "Failed to change password. Please check your current password and try again.",
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSetTransactionPin = async () => {
+    if (!pinForm.newPin || !pinForm.confirmPin) {
       setResult({
         type: "error",
-        title: "Password Change Failed",
-        message:
-          "Failed to change password. Please check your current password and try again.",
+        title: "Invalid Input",
+        message: "Please enter and confirm your transaction PIN.",
+      });
+      return;
+    }
+
+    if (pinForm.newPin !== pinForm.confirmPin) {
+      setResult({
+        type: "error",
+        title: "PIN Mismatch",
+        message: "Transaction PINs do not match.",
+      });
+      return;
+    }
+
+    if (pinForm.newPin.length !== 4) {
+      setResult({
+        type: "error",
+        title: "Invalid PIN",
+        message: "Transaction PIN must be 4 digits.",
+      });
+      return;
+    }
+
+    if (!user?.id) {
+      setResult({
+        type: "error",
+        title: "Update Failed",
+        message: "User ID not found. Please log in again.",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Call API to set transaction pin
+      await userAPI.setTransactionPin(user.id, pinForm.newPin);
+
+      // Update local state
+      setHasTransactionPin(true);
+
+      // Close both modals (set pin and reset pin modals)
+      setShowSetPin(false);
+      setShowPinModal(false);
+      setPinForm({ newPin: "", confirmPin: "" });
+
+      setResult({
+        type: "success",
+        title: "Transaction PIN Updated!",
+        message: "Your transaction PIN has been updated successfully.",
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to set transaction PIN. Please try again.";
+      setResult({
+        type: "error",
+        title: "PIN Setup Failed",
+        message: errorMessage,
       });
     } finally {
       setLoading(false);
@@ -116,17 +250,49 @@ export default function SettingsScreen() {
   };
 
   const handleVerifyForPinReset = async () => {
-    if (verifyPassword !== MOCK_PASSWORD) {
+    if (!verifyPassword) {
       setResult({
         type: "error",
-        title: "Wrong Password",
-        message: "Incorrect account password.",
+        title: "Password Required",
+        message: "Please enter your account password to continue.",
       });
       return;
     }
-    setShowResetPin(false);
-    setVerifyPassword("");
-    setShowPinModal(true);
+
+    setLoading(true);
+    try {
+      // Verify current password by attempting to login with provided password
+      // This ensures the password is actually correct
+      const loginResult = await authAPI.login(
+        user?.email || "",
+        verifyPassword,
+      );
+
+      if (loginResult && loginResult.token) {
+        // Password is correct, proceed with reset flow
+        setShowResetPin(false);
+        setVerifyPassword("");
+        setShowPinModal(true);
+
+        setResult({
+          type: "success",
+          title: "Password Verified",
+          message: "Password verified successfully. Please set your new PIN.",
+        });
+      } else {
+        throw new Error("Invalid credentials");
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Password verification failed";
+      setResult({
+        type: "error",
+        title: "Wrong Password",
+        message: "Incorrect account password. Please try again.",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogout = () => {
@@ -198,11 +364,13 @@ export default function SettingsScreen() {
               }
             />
             <Input
-              label="Email Address"
+              label="Email"
+              placeholder="john@example.com"
               value={profileForm.email}
               onChangeText={(v) => setProfileForm((f) => ({ ...f, email: v }))}
               keyboardType="email-address"
               autoCapitalize="none"
+              editable={false} // Email is read-only - server doesn't support email updates
             />
             <Input
               label="Phone Number"
@@ -247,58 +415,65 @@ export default function SettingsScreen() {
             {[
               {
                 icon: "lock-closed-outline",
-                title: "Transaction PIN",
-                sub: "Set up your 4-digit PIN",
-                onPress: () => setShowPinModal(true),
+                title: hasTransactionPin
+                  ? "Change Transaction PIN"
+                  : "Set Transaction PIN",
+                sub: hasTransactionPin
+                  ? "Update your 4-digit PIN"
+                  : "Set up your 4-digit PIN",
+                onPress: () =>
+                  hasTransactionPin
+                    ? setShowResetPin(true)
+                    : setShowSetPin(true),
+                disabled: false,
               },
-              {
-                icon: "lock-open-outline",
-                title: "Reset Transaction PIN",
-                sub: "Reset your PIN using current password",
-                onPress: () => setShowResetPin(true),
-              },
-            ].map((item, i) => (
-              <React.Fragment key={item.title}>
-                {i > 0 && (
-                  <View
-                    style={[styles.divider, { backgroundColor: colors.border }]}
-                  />
-                )}
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.secItem,
-                    pressed && { opacity: 0.7 },
-                  ]}
-                  onPress={item.onPress}
-                >
-                  <Ionicons
-                    name={item.icon as any}
-                    size={20}
-                    color={colors.textSecondary}
-                  />
-                  <View style={{ flex: 1 }}>
-                    <Text
+            ]
+              .filter((item) => !item.disabled)
+              .map((item, i) => (
+                <React.Fragment key={item.title}>
+                  {i > 0 && (
+                    <View
                       style={[
-                        styles.secItemTitle,
-                        { color: colors.textPrimary },
+                        styles.divider,
+                        { backgroundColor: colors.border },
                       ]}
-                    >
-                      {item.title}
-                    </Text>
-                    <Text
-                      style={[styles.secItemSub, { color: colors.textMuted }]}
-                    >
-                      {item.sub}
-                    </Text>
-                  </View>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={18}
-                    color={colors.textMuted}
-                  />
-                </Pressable>
-              </React.Fragment>
-            ))}
+                    />
+                  )}
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.secItem,
+                      pressed && { opacity: 0.7 },
+                    ]}
+                    onPress={item.onPress}
+                  >
+                    <Ionicons
+                      name={item.icon as any}
+                      size={20}
+                      color={colors.textSecondary}
+                    />
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[
+                          styles.secItemTitle,
+                          { color: colors.textPrimary },
+                        ]}
+                      >
+                        {item.title}
+                      </Text>
+                      <Text
+                        style={[styles.secItemSub, { color: colors.textMuted }]}
+                      >
+                        {item.sub}
+                      </Text>
+                    </View>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={18}
+                      color={colors.textMuted}
+                    />
+                  </Pressable>
+                </React.Fragment>
+              ))}
           </View>
         </View>
 
@@ -337,48 +512,120 @@ export default function SettingsScreen() {
             <GradientButton
               title="Change Password"
               onPress={handleChangePassword}
+              loading={loading}
             />
           </View>
         </View>
 
-        {/* Account Info */}
+        {/* Account Information */}
         <View
           style={[
             styles.card,
             { backgroundColor: colors.bgCard, borderColor: colors.border },
           ]}
         >
-          <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
-            Account Information
-          </Text>
+          <View style={styles.cardHeader}>
+            <LinearGradient
+              colors={["#10B981", "#059669"]}
+              style={styles.headerIcon}
+            >
+              <Ionicons name="information-circle" size={20} color="#fff" />
+            </LinearGradient>
+            <View>
+              <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
+                Account Information
+              </Text>
+              <Text style={[styles.cardSubtitle, { color: colors.textMuted }]}>
+                Your account details and status
+              </Text>
+            </View>
+          </View>
           <View style={styles.infoList}>
             <View style={styles.infoItem}>
-              <Ionicons
-                name="calendar-outline"
-                size={18}
-                color={colors.textMuted}
-              />
-              <View>
-                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>
-                  Date Joined
-                </Text>
-                <Text style={[styles.infoValue, { color: colors.textPrimary }]}>
-                  {user?.joinDate}
+              <Text style={[styles.infoLabel, { color: colors.textMuted }]}>
+                Date Joined
+              </Text>
+              <Text style={[styles.infoValue, { color: colors.textPrimary }]}>
+                {userProfile?.joinDate
+                  ? new Date(userProfile.joinDate).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })
+                  : "Loading..."}
+              </Text>
+            </View>
+            <View
+              style={[styles.divider, { backgroundColor: colors.border }]}
+            />
+            <View style={styles.infoItem}>
+              <Text style={[styles.infoLabel, { color: colors.textMuted }]}>
+                Account Status
+              </Text>
+              <View style={styles.statusRow}>
+                <View
+                  style={[
+                    styles.statusDot,
+                    {
+                      backgroundColor:
+                        userProfile?.status === "active"
+                          ? colors.success
+                          : userProfile?.status === "suspended"
+                            ? colors.warning
+                            : colors.error,
+                    },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.infoValue,
+                    {
+                      color:
+                        userProfile?.status === "active"
+                          ? colors.success
+                          : userProfile?.status === "suspended"
+                            ? colors.warning
+                            : colors.error,
+                    },
+                  ]}
+                >
+                  {userProfile?.status
+                    ? userProfile.status.charAt(0).toUpperCase() +
+                      userProfile.status.slice(1)
+                    : "Loading..."}
                 </Text>
               </View>
             </View>
+            <View
+              style={[styles.divider, { backgroundColor: colors.border }]}
+            />
             <View style={styles.infoItem}>
-              <Ionicons
-                name="shield-checkmark-outline"
-                size={18}
-                color={colors.success}
-              />
-              <View>
-                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>
-                  Account Status
-                </Text>
-                <Text style={[styles.infoValue, { color: colors.success }]}>
-                  {user?.accountStatus}
+              <Text style={[styles.infoLabel, { color: colors.textMuted }]}>
+                Verification Status
+              </Text>
+              <View style={styles.statusRow}>
+                <Ionicons
+                  name={
+                    userProfile?.isVerified
+                      ? "checkmark-circle"
+                      : "close-circle"
+                  }
+                  size={16}
+                  color={
+                    userProfile?.isVerified ? colors.success : colors.error
+                  }
+                />
+                <Text
+                  style={[
+                    styles.infoValue,
+                    {
+                      color: userProfile?.isVerified
+                        ? colors.success
+                        : colors.error,
+                    },
+                  ]}
+                >
+                  {userProfile?.isVerified ? "Verified" : "Not Verified"}
                 </Text>
               </View>
             </View>
@@ -461,7 +708,7 @@ export default function SettingsScreen() {
             </Text>
             <Input
               label="Password"
-              placeholder="Enter your password (hint: password123)"
+              placeholder="Enter your account password"
               value={verifyPassword}
               onChangeText={setVerifyPassword}
               isPassword
@@ -486,19 +733,103 @@ export default function SettingsScreen() {
         </View>
       )}
 
-      <PinModal
-        visible={showPinModal}
-        title="Set Transaction PIN"
-        onClose={() => setShowPinModal(false)}
-        onSuccess={() => {
-          setShowPinModal(false);
-          setResult({
-            type: "success",
-            title: "PIN Set!",
-            message: "Your transaction PIN has been set successfully.",
-          });
-        }}
-      />
+      {/* Set Transaction PIN Modal */}
+      {showSetPin && (
+        <View style={styles.overlay}>
+          <View style={[styles.verifyCard, { backgroundColor: colors.bgCard }]}>
+            <Text style={[styles.verifyTitle, { color: colors.textPrimary }]}>
+              Set Transaction PIN
+            </Text>
+            <Text style={[styles.verifySub, { color: colors.textMuted }]}>
+              Create a 4-digit PIN for transactions
+            </Text>
+            <Input
+              label="New PIN"
+              placeholder="Enter 4-digit PIN"
+              value={pinForm.newPin}
+              onChangeText={(v) => setPinForm((f) => ({ ...f, newPin: v }))}
+              keyboardType="numeric"
+              maxLength={4}
+              isPassword
+            />
+            <Input
+              label="Confirm PIN"
+              placeholder="Confirm your PIN"
+              value={pinForm.confirmPin}
+              onChangeText={(v) => setPinForm((f) => ({ ...f, confirmPin: v }))}
+              keyboardType="numeric"
+              maxLength={4}
+              isPassword
+            />
+            <View style={styles.verifyBtns}>
+              <GradientButton
+                title="Set PIN"
+                onPress={handleSetTransactionPin}
+                loading={loading}
+                style={{ flex: 1 }}
+              />
+              <GradientButton
+                title="Cancel"
+                onPress={() => {
+                  setShowSetPin(false);
+                  setPinForm({ newPin: "", confirmPin: "" });
+                }}
+                variant="ghost"
+                style={{ flex: 1 }}
+              />
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* Reset Transaction PIN Modal */}
+      {showPinModal && (
+        <View style={styles.overlay}>
+          <View style={[styles.verifyCard, { backgroundColor: colors.bgCard }]}>
+            <Text style={[styles.verifyTitle, { color: colors.textPrimary }]}>
+              Reset Transaction PIN
+            </Text>
+            <Text style={[styles.verifySub, { color: colors.textMuted }]}>
+              Enter your new 4-digit PIN
+            </Text>
+            <Input
+              label="New PIN"
+              placeholder="Enter 4-digit PIN"
+              value={pinForm.newPin}
+              onChangeText={(v) => setPinForm((f) => ({ ...f, newPin: v }))}
+              keyboardType="numeric"
+              maxLength={4}
+              isPassword
+            />
+            <Input
+              label="Confirm PIN"
+              placeholder="Confirm your PIN"
+              value={pinForm.confirmPin}
+              onChangeText={(v) => setPinForm((f) => ({ ...f, confirmPin: v }))}
+              keyboardType="numeric"
+              maxLength={4}
+              isPassword
+            />
+            <View style={styles.verifyBtns}>
+              <GradientButton
+                title="Reset PIN"
+                onPress={handleSetTransactionPin}
+                loading={loading}
+                style={{ flex: 1 }}
+              />
+              <GradientButton
+                title="Cancel"
+                onPress={() => {
+                  setShowPinModal(false);
+                  setPinForm({ newPin: "", confirmPin: "" });
+                }}
+                variant="ghost"
+                style={{ flex: 1 }}
+              />
+            </View>
+          </View>
+        </View>
+      )}
 
       {result && (
         <ResultModal
@@ -598,8 +929,10 @@ const styles = StyleSheet.create({
   divider: { height: 1 },
   infoList: { gap: 14 },
   infoItem: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
-  infoLabel: { fontSize: 12, fontFamily: "Nunito_400Regular" },
+  infoLabel: { fontSize: 12, fontFamily: "Nunito_400Regular", flex: 1 },
   infoValue: { fontSize: 15, fontFamily: "Nunito_600SemiBold" },
+  statusRow: { flexDirection: "row", gap: 8, alignItems: "center" },
+  statusDot: { width: 8, height: 8, borderRadius: 4 },
   themeRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   themeIcon: {
     width: 44,

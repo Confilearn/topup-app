@@ -26,6 +26,7 @@ interface UserProfile {
   totalTransactions?: number;
   joinDate?: string;
   accountStatus?: string;
+  transactionPin?: string; // Add transaction pin field
 }
 
 // User store interface
