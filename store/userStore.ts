@@ -27,6 +27,13 @@ interface UserProfile {
   joinDate?: string;
   accountStatus?: string;
   transactionPin?: string; // Add transaction pin field
+  virtualAccount?: {
+    accountNumber: string;
+    bankName: string;
+    accountName: string;
+    provider: string;
+    isActive: boolean;
+  };
 }
 
 // User store interface
@@ -44,6 +51,8 @@ interface UserStore {
   clearUserProfile: () => void;
   refreshUserProfile: (userId: string) => Promise<void>;
   isDataStale: (maxAgeMinutes?: number) => boolean;
+  createVirtualAccount: (bvn: string) => Promise<void>;
+  hasVirtualAccount: () => boolean;
 }
 
 // AsyncStorage storage for Zustand (mobile-only)
@@ -99,10 +108,11 @@ export const useUserStore = create<UserStore>()(
         try {
           // Fetch user profile from /user/profile/:id endpoint
           const response = await userAPI.getProfile(userId);
+          console.log("Server response:", response);
 
           // Store non-sensitive user data locally
           const userData: UserProfile = {
-            id: response.id,
+            id: response.id || response._id,
             username: response.username,
             role: response.role,
             status: response.status,
@@ -169,6 +179,84 @@ export const useUserStore = create<UserStore>()(
 
         const maxAge = maxAgeMinutes * 60 * 1000; // Convert to milliseconds
         return Date.now() - lastFetched > maxAge;
+      },
+
+      // Create virtual account with BVN
+      createVirtualAccount: async (bvn: string) => {
+        console.log("createVirtualAccount called with BVN:", bvn);
+        const { userProfile } = get();
+        console.log("Current userProfile:", userProfile);
+
+        // Get user ID from profile, auth store, or username as fallback
+        let userId = userProfile?.id;
+
+        if (!userId) {
+          // Try to get from auth store
+          try {
+            const authStore = require("./authStore").useAuthStore.getState();
+            userId =
+              authStore.user?.id ||
+              authStore.user?._id ||
+              authStore.user?.username;
+          } catch (e) {
+            console.log("Could not access auth store");
+          }
+        }
+
+        if (!userId) {
+          userId = userProfile?.username;
+        }
+
+        if (!userId) {
+          console.error("No user ID found");
+          set({ error: "No user ID found" });
+          return;
+        }
+
+        console.log("Setting loading to true");
+        set({ isLoading: true, error: null });
+
+        try {
+          // Call the virtual account creation API
+          console.log("Calling API with userId:", userId, "BVN:", bvn);
+          const response = await userAPI.createVirtualAccount(userId, bvn);
+          console.log("API response:", response);
+
+          // Update user profile with virtual account info
+          set((state) => ({
+            userProfile: state.userProfile
+              ? {
+                  ...state.userProfile,
+                  virtualAccount: {
+                    ...response.virtualAccount,
+                    isActive: true, // Add isActive field
+                  },
+                  isVerified:
+                    response.isVerified || state.userProfile.isVerified,
+                }
+              : null,
+            isLoading: false,
+            error: null,
+          }));
+          console.log("Virtual account created and profile updated");
+        } catch (error) {
+          console.error("Failed to create virtual account:", error);
+          set({
+            isLoading: false,
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to create virtual account",
+          });
+        }
+      },
+
+      // Check if user has virtual account
+      hasVirtualAccount: () => {
+        const { userProfile } = get();
+        return (
+          !!userProfile?.virtualAccount && userProfile.virtualAccount.isActive
+        );
       },
     }),
     {

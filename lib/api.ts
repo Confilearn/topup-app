@@ -245,6 +245,29 @@ export const userAPI = {
       method: "GET",
     });
   },
+
+  // Create virtual account - matches POST /user/virtual-account
+  createVirtualAccount: async (userId: string, bvn: string) => {
+    console.log(
+      "API: createVirtualAccount called with userId:",
+      userId,
+      "bvn:",
+      bvn,
+    );
+    const response = await apiRequest(`/user/virtual-account`, {
+      method: "POST",
+      body: JSON.stringify({ userId, bvn }),
+    });
+    console.log("API: createVirtualAccount response:", response);
+    return response;
+  },
+
+  // Get deposit history - matches GET /user/deposits
+  getDepositHistory: async () => {
+    return apiRequest("/user/deposits", {
+      method: "GET",
+    });
+  },
 };
 
 // Public API endpoints (no auth required)
