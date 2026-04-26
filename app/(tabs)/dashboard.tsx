@@ -18,6 +18,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useWalletStore } from "@/store/walletStore";
 import { useTransactionStore } from "@/store/transactionStore";
 import { useUserStore } from "@/store/userStore";
+import { useReferralStore } from "@/store/referralStore";
 import { TransactionCard } from "@/components/ui/TransactionCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { AppHeader } from "@/components/ui/AppHeader";
@@ -65,6 +66,8 @@ export default function DashboardScreen() {
     isDataStale,
     isLoading: userLoading,
   } = useUserStore();
+  const { fetchReferralHistory, isDataStale: isReferralDataStale } =
+    useReferralStore();
   const { syncBalanceFromProfile } = useWalletStore();
   const insets = useSafeAreaInsets();
   const [balanceVisible, setBalanceVisible] = useState(true);
@@ -77,6 +80,15 @@ export default function DashboardScreen() {
       fetchUserProfile(user.id);
     }
   }, [user?.id, userProfile, isDataStale, fetchUserProfile]);
+
+  // Fetch referral history if stale or not available
+  useEffect(() => {
+    if (user && isReferralDataStale()) {
+      fetchReferralHistory().catch((error) => {
+        console.error("Failed to fetch referral data:", error);
+      });
+    }
+  }, [user, isReferralDataStale, fetchReferralHistory]);
 
   // Sync wallet balance when user profile is updated
   useEffect(() => {
@@ -95,6 +107,15 @@ export default function DashboardScreen() {
         // Balance will be automatically synced by the effect
       } catch (error) {
         console.error("Failed to refresh user profile:", error);
+      }
+    }
+
+    // Refresh referral data if stale
+    if (user && isReferralDataStale()) {
+      try {
+        await fetchReferralHistory();
+      } catch (error) {
+        console.error("Failed to refresh referral data:", error);
       }
     }
 

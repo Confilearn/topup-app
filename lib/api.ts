@@ -238,4 +238,11 @@ export const userAPI = {
       body: JSON.stringify({ transactionPin: pin }),
     });
   },
+
+  // Get referral history - matches GET /user/referrals
+  getReferralHistory: async () => {
+    return apiRequest("/user/referrals", {
+      method: "GET",
+    });
+  },
 };

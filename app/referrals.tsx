@@ -14,7 +14,9 @@ import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useTheme";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { useUserStore } from "@/store/userStore";
+import { useReferralStore } from "@/store/referralStore";
 import { ResultModal } from "@/components/services/ResultModal";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 /**
  * Referrals Page - Standalone page for referral management
@@ -25,6 +27,12 @@ export default function ReferralsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { userProfile } = useUserStore();
+  const {
+    referralHistory,
+    isLoading: referralLoading,
+    error: referralError,
+    getReferredUsers,
+  } = useReferralStore();
 
   // State for beautiful modal feedback
   const [result, setResult] = useState<{
@@ -253,8 +261,128 @@ export default function ReferralsScreen() {
           </View>
         </View>
 
-        {/* Referred Users Section - Placeholder for future implementation */}
-        {/* TODO: Implement referred users section with real API data */}
+        {/* Referred Users Section */}
+        <View style={styles.usersSection}>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+            Referred Users
+          </Text>
+          <Text style={[styles.sectionSub, { color: colors.textMuted }]}>
+            {getReferredUsers().length} users referred
+          </Text>
+
+          {/* Loading state */}
+          {referralLoading && (
+            <View style={styles.loadingContainer}>
+              <Text style={[styles.loadingText, { color: colors.textMuted }]}>
+                Loading referred users...
+              </Text>
+            </View>
+          )}
+
+          {/* Error state */}
+          {referralError && !referralLoading && (
+            <View style={styles.errorContainer}>
+              <Text style={[styles.errorText, { color: colors.error }]}>
+                {referralError}
+              </Text>
+            </View>
+          )}
+
+          {/* Empty state */}
+          {!referralLoading &&
+            !referralError &&
+            getReferredUsers().length === 0 && (
+              <EmptyState
+                icon="people-outline"
+                title="No Referrals Yet"
+                subtitle="Share your referral link to start earning rewards"
+              />
+            )}
+
+          {/* Users list */}
+          {!referralLoading &&
+            !referralError &&
+            getReferredUsers().length > 0 && (
+              <View style={styles.userList}>
+                {getReferredUsers().map((referral) => (
+                  <View
+                    key={referral._id}
+                    style={[
+                      styles.userCard,
+                      {
+                        backgroundColor: colors.bgCard,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.userAvatar,
+                        { backgroundColor: `${colors.purple}30` },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.userInitial,
+                          { color: colors.purpleLight },
+                        ]}
+                      >
+                        {referral.referredUser.username[0]?.toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={styles.userInfo}>
+                      <Text
+                        style={[styles.userName, { color: colors.textPrimary }]}
+                      >
+                        {referral.referredUser.username}
+                      </Text>
+                      <Text
+                        style={[styles.userDate, { color: colors.textMuted }]}
+                      >
+                        Joined {referral.referredUser.joinDate}
+                      </Text>
+                    </View>
+                    <View style={styles.userRight}>
+                      <Text
+                        style={[styles.userEarning, { color: colors.success }]}
+                      >
+                        +{formatCurrency(referral.referredUser.earnings)}
+                      </Text>
+                      <View
+                        style={[
+                          styles.userBadge,
+                          {
+                            backgroundColor:
+                              referral.referredUser.status === "active"
+                                ? `${colors.success}20`
+                                : referral.referredUser.status === "pending"
+                                  ? `${colors.warning}20`
+                                  : `${colors.textMuted}20`,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.userBadgeText,
+                            {
+                              color:
+                                referral.referredUser.status === "active"
+                                  ? colors.success
+                                  : referral.referredUser.status === "pending"
+                                    ? colors.warning
+                                    : colors.textMuted,
+                            },
+                          ]}
+                        >
+                          {referral.referredUser.status}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+        </View>
       </ScrollView>
 
       {/* Result Modal for beautiful feedback */}
@@ -338,4 +466,54 @@ const styles = StyleSheet.create({
   codeLabel: { fontSize: 13, fontFamily: "Nunito_400Regular" },
   codeBox: { flexDirection: "row", alignItems: "center", gap: 8 },
   codeText: { fontSize: 15, fontFamily: "Nunito_700Bold" },
+
+  // Referred users section styles
+  usersSection: { gap: 16, marginTop: 8 },
+  userList: { gap: 12 },
+  userCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+  },
+  userAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  userInitial: { fontSize: 18, fontFamily: "Nunito_700Bold" },
+  userInfo: { flex: 1, gap: 4 },
+  userName: { fontSize: 15, fontFamily: "Nunito_600SemiBold" },
+  userDate: { fontSize: 12, fontFamily: "Nunito_400Regular" },
+  userRight: { alignItems: "flex-end", gap: 6 },
+  userEarning: { fontSize: 14, fontFamily: "Nunito_700Bold" },
+  userBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  userBadgeText: { fontSize: 11, fontFamily: "Nunito_600SemiBold" },
+
+  // Loading and error states
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 40,
+  },
+  loadingText: {
+    fontSize: 16,
+    fontFamily: "Nunito_500Medium",
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 40,
+  },
+  errorText: {
+    fontSize: 16,
+    fontFamily: "Nunito_500Medium",
+    textAlign: "center",
+  },
 });
