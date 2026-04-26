@@ -38,12 +38,14 @@ interface ReferralStore {
   isLoading: boolean;
   error: string | null;
   lastFetched: number | null;
+  currentUserId: string | null; // Track current user for cache invalidation
 
   // Actions
   fetchReferralHistory: () => Promise<void>;
   clearReferralHistory: () => void;
   isDataStale: (maxAgeMinutes?: number) => boolean;
   getReferredUsers: () => ReferralUser[];
+  setCurrentUser: (userId: string | null) => void; // Set current user for tracking
 }
 
 // AsyncStorage storage for Zustand (mobile-only)
@@ -81,6 +83,7 @@ export const useReferralStore = create<ReferralStore>()(
       isLoading: false,
       error: null,
       lastFetched: null,
+      currentUserId: null,
 
       // Fetch referral history from server
       fetchReferralHistory: async () => {
@@ -116,6 +119,7 @@ export const useReferralStore = create<ReferralStore>()(
       clearReferralHistory: () => {
         set({
           referralHistory: [],
+          currentUserId: null,
           error: null,
           lastFetched: null,
         });
@@ -146,6 +150,22 @@ export const useReferralStore = create<ReferralStore>()(
             earnings: referral.earnings || 0,
           },
         }));
+      },
+
+      // Set current user for tracking
+      setCurrentUser: (userId: string | null) => {
+        const { currentUserId } = get();
+
+        // Clear data if switching users
+        if (currentUserId && currentUserId !== userId) {
+          set({
+            referralHistory: [],
+            lastFetched: null,
+            error: null,
+          });
+        }
+
+        set({ currentUserId: userId });
       },
     }),
     {

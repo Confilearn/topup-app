@@ -66,8 +66,11 @@ export default function DashboardScreen() {
     isDataStale,
     isLoading: userLoading,
   } = useUserStore();
-  const { fetchReferralHistory, isDataStale: isReferralDataStale } =
-    useReferralStore();
+  const {
+    fetchReferralHistory,
+    isDataStale: isReferralDataStale,
+    setCurrentUser,
+  } = useReferralStore();
   const { syncBalanceFromProfile } = useWalletStore();
   const insets = useSafeAreaInsets();
   const [balanceVisible, setBalanceVisible] = useState(true);
@@ -81,14 +84,19 @@ export default function DashboardScreen() {
     }
   }, [user?.id, userProfile, isDataStale, fetchUserProfile]);
 
-  // Fetch referral history if stale or not available
+  // Set current user for referral store and fetch referral history if stale
   useEffect(() => {
-    if (user && isReferralDataStale()) {
-      fetchReferralHistory().catch((error) => {
-        console.error("Failed to fetch referral data:", error);
-      });
+    if (user?.id) {
+      setCurrentUser(user.id);
+      if (isReferralDataStale()) {
+        fetchReferralHistory().catch((error) => {
+          console.error("Failed to fetch referral data:", error);
+        });
+      }
+    } else {
+      setCurrentUser(null);
     }
-  }, [user, isReferralDataStale, fetchReferralHistory]);
+  }, [user?.id, isReferralDataStale, fetchReferralHistory, setCurrentUser]);
 
   // Sync wallet balance when user profile is updated
   useEffect(() => {

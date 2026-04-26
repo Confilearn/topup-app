@@ -17,6 +17,7 @@ interface WalletState {
   deductBalance: (amount: number) => void;
   addBalance: (amount: number) => void;
   syncBalanceFromProfile: () => void; // New method to sync from user profile
+  clearWalletData: () => void; // Method to clear wallet data on logout
 }
 
 export const useWalletStore = create<WalletState>((set) => ({
@@ -47,5 +48,14 @@ export const useWalletStore = create<WalletState>((set) => ({
     if (userProfile?.balance !== undefined) {
       set({ balance: userProfile.balance });
     }
+  },
+
+  // Clear wallet data on logout
+  clearWalletData: () => {
+    set({
+      balance: 0,
+      virtualAccount: null,
+      hasVirtualAccount: false,
+    });
   },
 }));

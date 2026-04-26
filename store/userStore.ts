@@ -36,6 +36,7 @@ interface UserStore {
   isLoading: boolean;
   error: string | null;
   lastFetched: number | null; // Timestamp of last fetch
+  currentUserId: string | null; // Track current user for cache invalidation
 
   // Actions
   fetchUserProfile: (userId: string) => Promise<void>;
@@ -78,9 +79,21 @@ export const useUserStore = create<UserStore>()(
       isLoading: false,
       error: null,
       lastFetched: null,
+      currentUserId: null,
 
       // Fetch user profile from server
       fetchUserProfile: async (userId: string) => {
+        const { currentUserId } = get();
+
+        // Clear data if switching users
+        if (currentUserId && currentUserId !== userId) {
+          set({
+            userProfile: null,
+            lastFetched: null,
+            error: null,
+          });
+        }
+
         set({ isLoading: true, error: null });
 
         try {
@@ -109,6 +122,7 @@ export const useUserStore = create<UserStore>()(
 
           set({
             userProfile: userData,
+            currentUserId: userId,
             isLoading: false,
             error: null,
             lastFetched: Date.now(),
@@ -136,6 +150,7 @@ export const useUserStore = create<UserStore>()(
       clearUserProfile: () => {
         set({
           userProfile: null,
+          currentUserId: null,
           isLoading: false,
           error: null,
           lastFetched: null,
@@ -163,6 +178,7 @@ export const useUserStore = create<UserStore>()(
       partialize: (state) => ({
         userProfile: state.userProfile,
         lastFetched: state.lastFetched,
+        currentUserId: state.currentUserId,
       }),
     },
   ),
