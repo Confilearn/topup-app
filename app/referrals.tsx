@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -15,8 +15,10 @@ import { useColors } from "@/hooks/useTheme";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { useUserStore } from "@/store/userStore";
 import { useReferralStore } from "@/store/referralStore";
+import { useReferralSettingsStore } from "@/store/referralSettingsStore";
 import { ResultModal } from "@/components/services/ResultModal";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ReferralDisabled } from "@/components/ui/ReferralDisabled";
 
 /**
  * Referrals Page - Standalone page for referral management
@@ -33,6 +35,14 @@ export default function ReferralsScreen() {
     error: referralError,
     getReferredUsers,
   } = useReferralStore();
+  const {
+    settings: referralSettings,
+    isLoading: settingsLoading,
+    fetchReferralSettings,
+    isDataStale: isSettingsDataStale,
+    isReferralEnabled,
+    getDisabledMessage,
+  } = useReferralSettingsStore();
 
   // State for beautiful modal feedback
   const [result, setResult] = useState<{
@@ -40,6 +50,15 @@ export default function ReferralsScreen() {
     title: string;
     message: string;
   } | null>(null);
+
+  // Fetch referral settings on component mount
+  useEffect(() => {
+    if (isSettingsDataStale()) {
+      fetchReferralSettings().catch((error) => {
+        console.error("Failed to fetch referral settings:", error);
+      });
+    }
+  }, [isSettingsDataStale, fetchReferralSettings]);
 
   const topPadding = insets.top + (Platform.OS === "web" ? 67 : 0);
   const bottomPadding = insets.bottom + (Platform.OS === "web" ? 34 : 0);
@@ -171,218 +190,270 @@ export default function ReferralsScreen() {
         contentContainerStyle={[styles.scroll, { paddingTop: topPadding }]}
       >
         <AppHeader />
-        <Text style={[styles.title, { color: colors.textPrimary }]}>
-          Referrals
-        </Text>
-        <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-          Earn rewards by inviting friends
-        </Text>
 
-        <View style={styles.statsGrid}>
-          {STAT_CARDS.map((s) => (
+        {/* Show loading state while fetching settings */}
+        {settingsLoading ? (
+          <View style={styles.loadingContainer}>
+            <Text style={[styles.loadingText, { color: colors.textMuted }]}>
+              Loading referral settings...
+            </Text>
+          </View>
+        ) : !isReferralEnabled() ? (
+          /* Show disabled message if referral is disabled */
+          <ReferralDisabled message={getDisabledMessage()} />
+        ) : (
+          <>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>
+              Referrals
+            </Text>
+            <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+              Earn rewards by inviting friends
+            </Text>
+
+            <View style={styles.statsGrid}>
+              {STAT_CARDS.map((s) => (
+                <View
+                  key={s.label}
+                  style={[
+                    styles.statCard,
+                    {
+                      backgroundColor: colors.bgCard,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.statIcon,
+                      { backgroundColor: `${s.color}20` },
+                    ]}
+                  >
+                    <Ionicons name={s.icon as any} size={20} color={s.color} />
+                  </View>
+                  <Text
+                    style={[styles.statValue, { color: colors.textPrimary }]}
+                  >
+                    {s.value}
+                  </Text>
+                  <Text style={[styles.statLabel, { color: colors.textMuted }]}>
+                    {s.label}
+                  </Text>
+                </View>
+              ))}
+            </View>
+
             <View
-              key={s.label}
               style={[
-                styles.statCard,
+                styles.linkCard,
                 { backgroundColor: colors.bgCard, borderColor: colors.border },
               ]}
             >
-              <View
-                style={[styles.statIcon, { backgroundColor: `${s.color}20` }]}
+              <Text
+                style={[styles.sectionTitle, { color: colors.textPrimary }]}
               >
-                <Ionicons name={s.icon as any} size={20} color={s.color} />
+                Your Referral Link
+              </Text>
+              <View
+                style={[
+                  styles.linkBox,
+                  {
+                    backgroundColor: colors.bgCardAlt,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Ionicons name="link-outline" size={18} color={colors.purple} />
+                <Text
+                  style={[styles.linkText, { color: colors.textSecondary }]}
+                  numberOfLines={1}
+                >
+                  {referralLink || "Loading..."}
+                </Text>
               </View>
-              <Text style={[styles.statValue, { color: colors.textPrimary }]}>
-                {s.value}
-              </Text>
-              <Text style={[styles.statLabel, { color: colors.textMuted }]}>
-                {s.label}
-              </Text>
-            </View>
-          ))}
-        </View>
-
-        <View
-          style={[
-            styles.linkCard,
-            { backgroundColor: colors.bgCard, borderColor: colors.border },
-          ]}
-        >
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-            Your Referral Link
-          </Text>
-          <View
-            style={[
-              styles.linkBox,
-              { backgroundColor: colors.bgCardAlt, borderColor: colors.border },
-            ]}
-          >
-            <Ionicons name="link-outline" size={18} color={colors.purple} />
-            <Text
-              style={[styles.linkText, { color: colors.textSecondary }]}
-              numberOfLines={1}
-            >
-              {referralLink || "Loading..."}
-            </Text>
-          </View>
-          <View style={styles.linkActions}>
-            <Pressable
-              style={[
-                styles.actionBtn,
-                {
-                  backgroundColor: `${colors.purple}20`,
-                  borderColor: colors.purple,
-                },
-              ]}
-              onPress={copyReferralLink}
-            >
-              <Ionicons
-                name="share-outline"
-                size={16}
-                color={colors.purpleLight}
-              />
-              <Text style={[styles.actionText, { color: colors.purpleLight }]}>
-                Share Link
-              </Text>
-            </Pressable>
-          </View>
-          <View style={[styles.codeRow, { backgroundColor: colors.bgCardAlt }]}>
-            <Text style={[styles.codeLabel, { color: colors.textMuted }]}>
-              Referral Code
-            </Text>
-            <View style={styles.codeBox}>
-              <Text style={[styles.codeText, { color: colors.purpleLight }]}>
-                {userProfile?.referralCode || "Loading..."}
-              </Text>
-              <Pressable onPress={copyReferralCode}>
-                <Ionicons name="copy-outline" size={16} color={colors.purple} />
-              </Pressable>
-            </View>
-          </View>
-        </View>
-
-        {/* Referred Users Section */}
-        <View style={styles.usersSection}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-            Referred Users
-          </Text>
-          <Text style={[styles.sectionSub, { color: colors.textMuted }]}>
-            {getReferredUsers().length} users referred
-          </Text>
-
-          {/* Loading state */}
-          {referralLoading && (
-            <View style={styles.loadingContainer}>
-              <Text style={[styles.loadingText, { color: colors.textMuted }]}>
-                Loading referred users...
-              </Text>
-            </View>
-          )}
-
-          {/* Error state */}
-          {referralError && !referralLoading && (
-            <View style={styles.errorContainer}>
-              <Text style={[styles.errorText, { color: colors.error }]}>
-                {referralError}
-              </Text>
-            </View>
-          )}
-
-          {/* Empty state */}
-          {!referralLoading &&
-            !referralError &&
-            getReferredUsers().length === 0 && (
-              <EmptyState
-                icon="people-outline"
-                title="No Referrals Yet"
-                subtitle="Share your referral link to start earning rewards"
-              />
-            )}
-
-          {/* Users list */}
-          {!referralLoading &&
-            !referralError &&
-            getReferredUsers().length > 0 && (
-              <View style={styles.userList}>
-                {getReferredUsers().map((referral) => (
-                  <View
-                    key={referral._id}
-                    style={[
-                      styles.userCard,
-                      {
-                        backgroundColor: colors.bgCard,
-                        borderColor: colors.border,
-                      },
-                    ]}
+              <View style={styles.linkActions}>
+                <Pressable
+                  style={[
+                    styles.actionBtn,
+                    {
+                      backgroundColor: `${colors.purple}20`,
+                      borderColor: colors.purple,
+                    },
+                  ]}
+                  onPress={copyReferralLink}
+                >
+                  <Ionicons
+                    name="share-outline"
+                    size={16}
+                    color={colors.purpleLight}
+                  />
+                  <Text
+                    style={[styles.actionText, { color: colors.purpleLight }]}
                   >
-                    <View
-                      style={[
-                        styles.userAvatar,
-                        { backgroundColor: `${colors.purple}30` },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.userInitial,
-                          { color: colors.purpleLight },
-                        ]}
-                      >
-                        {referral.referredUser.username[0]?.toUpperCase()}
-                      </Text>
-                    </View>
-                    <View style={styles.userInfo}>
-                      <Text
-                        style={[styles.userName, { color: colors.textPrimary }]}
-                      >
-                        {referral.referredUser.username}
-                      </Text>
-                      <Text
-                        style={[styles.userDate, { color: colors.textMuted }]}
-                      >
-                        Joined {referral.referredUser.joinDate}
-                      </Text>
-                    </View>
-                    <View style={styles.userRight}>
-                      <Text
-                        style={[styles.userEarning, { color: colors.success }]}
-                      >
-                        +{formatCurrency(referral.referredUser.earnings)}
-                      </Text>
+                    Share Link
+                  </Text>
+                </Pressable>
+              </View>
+              <View
+                style={[styles.codeRow, { backgroundColor: colors.bgCardAlt }]}
+              >
+                <Text style={[styles.codeLabel, { color: colors.textMuted }]}>
+                  Referral Code
+                </Text>
+                <View style={styles.codeBox}>
+                  <Text
+                    style={[styles.codeText, { color: colors.purpleLight }]}
+                  >
+                    {userProfile?.referralCode || "Loading..."}
+                  </Text>
+                  <Pressable onPress={copyReferralCode}>
+                    <Ionicons
+                      name="copy-outline"
+                      size={16}
+                      color={colors.purple}
+                    />
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+
+            {/* Referred Users Section */}
+            <View style={styles.usersSection}>
+              <Text
+                style={[styles.sectionTitle, { color: colors.textPrimary }]}
+              >
+                Referred Users
+              </Text>
+              <Text style={[styles.sectionSub, { color: colors.textMuted }]}>
+                {getReferredUsers().length} users referred
+              </Text>
+
+              {/* Loading state */}
+              {referralLoading && (
+                <View style={styles.loadingContainer}>
+                  <Text
+                    style={[styles.loadingText, { color: colors.textMuted }]}
+                  >
+                    Loading referred users...
+                  </Text>
+                </View>
+              )}
+
+              {/* Error state */}
+              {referralError && !referralLoading && (
+                <View style={styles.errorContainer}>
+                  <Text style={[styles.errorText, { color: colors.error }]}>
+                    {referralError}
+                  </Text>
+                </View>
+              )}
+
+              {/* Empty state */}
+              {!referralLoading &&
+                !referralError &&
+                getReferredUsers().length === 0 && (
+                  <EmptyState
+                    icon="people-outline"
+                    title="No Referrals Yet"
+                    subtitle="Share your referral link to start earning rewards"
+                  />
+                )}
+
+              {/* Users list */}
+              {!referralLoading &&
+                !referralError &&
+                getReferredUsers().length > 0 && (
+                  <View style={styles.userList}>
+                    {getReferredUsers().map((referral) => (
                       <View
+                        key={referral._id}
                         style={[
-                          styles.userBadge,
+                          styles.userCard,
                           {
-                            backgroundColor:
-                              referral.referredUser.status === "active"
-                                ? `${colors.success}20`
-                                : referral.referredUser.status === "pending"
-                                  ? `${colors.warning}20`
-                                  : `${colors.textMuted}20`,
+                            backgroundColor: colors.bgCard,
+                            borderColor: colors.border,
                           },
                         ]}
                       >
-                        <Text
+                        <View
                           style={[
-                            styles.userBadgeText,
-                            {
-                              color:
-                                referral.referredUser.status === "active"
-                                  ? colors.success
-                                  : referral.referredUser.status === "pending"
-                                    ? colors.warning
-                                    : colors.textMuted,
-                            },
+                            styles.userAvatar,
+                            { backgroundColor: `${colors.purple}30` },
                           ]}
                         >
-                          {referral.referredUser.status}
-                        </Text>
+                          <Text
+                            style={[
+                              styles.userInitial,
+                              { color: colors.purpleLight },
+                            ]}
+                          >
+                            {referral.referredUser.username[0]?.toUpperCase()}
+                          </Text>
+                        </View>
+                        <View style={styles.userInfo}>
+                          <Text
+                            style={[
+                              styles.userName,
+                              { color: colors.textPrimary },
+                            ]}
+                          >
+                            {referral.referredUser.username}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.userDate,
+                              { color: colors.textMuted },
+                            ]}
+                          >
+                            Joined {referral.referredUser.joinDate}
+                          </Text>
+                        </View>
+                        <View style={styles.userRight}>
+                          <Text
+                            style={[
+                              styles.userEarning,
+                              { color: colors.success },
+                            ]}
+                          >
+                            +{formatCurrency(referral.referredUser.earnings)}
+                          </Text>
+                          <View
+                            style={[
+                              styles.userBadge,
+                              {
+                                backgroundColor:
+                                  referral.referredUser.status === "active"
+                                    ? `${colors.success}20`
+                                    : referral.referredUser.status === "pending"
+                                      ? `${colors.warning}20`
+                                      : `${colors.textMuted}20`,
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.userBadgeText,
+                                {
+                                  color:
+                                    referral.referredUser.status === "active"
+                                      ? colors.success
+                                      : referral.referredUser.status ===
+                                          "pending"
+                                        ? colors.warning
+                                        : colors.textMuted,
+                                },
+                              ]}
+                            >
+                              {referral.referredUser.status}
+                            </Text>
+                          </View>
+                        </View>
                       </View>
-                    </View>
+                    ))}
                   </View>
-                ))}
-              </View>
-            )}
-        </View>
+                )}
+            </View>
+          </>
+        )}
       </ScrollView>
 
       {/* Result Modal for beautiful feedback */}

@@ -246,3 +246,13 @@ export const userAPI = {
     });
   },
 };
+
+// Public API endpoints (no auth required)
+export const publicAPI = {
+  // Get referral settings - matches GET /referral-settings
+  getReferralSettings: async () => {
+    return apiRequest("/referral-settings", {
+      method: "GET",
+    });
+  },
+};
