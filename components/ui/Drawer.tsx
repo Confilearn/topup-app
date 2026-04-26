@@ -38,7 +38,7 @@ const NAV_ITEMS = [
     label: "Transactions",
     route: "/(tabs)/transactions",
   },
-  { icon: "people-outline", label: "Referrals", route: "/(tabs)/referrals" },
+  { icon: "people-outline", label: "Referrals", route: "/referrals" },
   {
     icon: "person-outline",
     label: "Profile & Settings",
