@@ -210,10 +210,19 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: {
     paddingHorizontal: 20,
+    paddingBottom: 40,
   },
   header: { paddingBottom: 20 },
-  title: { fontSize: 28, fontFamily: "Nunito_800ExtraBold", marginBottom: 4 },
-  subtitle: { fontSize: 14, fontFamily: "Nunito_400Regular", marginBottom: 20 },
+  title: {
+    fontSize: 28,
+    fontFamily: "Nunito_800ExtraBold",
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 14,
+    fontFamily: "Nunito_400Regular",
+    marginBottom: 20,
+  },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -253,5 +262,6 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     flex: 1,
+    paddingBottom: 20,
   },
 });

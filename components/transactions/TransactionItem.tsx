@@ -94,7 +94,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
       onPress(transaction);
     } else {
       // Default navigation to transaction details
-      router.push(`/transaction/${transaction._id}`);
+      router.push(`/transaction/${transaction._id}` as any);
     }
   };
 
