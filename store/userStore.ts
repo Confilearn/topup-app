@@ -31,8 +31,16 @@ interface UserProfile {
     accountNumber: string;
     bankName: string;
     accountName: string;
-    provider: string;
-    isActive: boolean;
+    provider?: string;
+    status?: string; // "active" or "inactive" from Paystack
+    isActive?: boolean; // For backward compatibility
+    accountReference?: string;
+    reservationReference?: string;
+    customerEmail?: string;
+    currencyCode?: string;
+    createdOn?: string;
+    customerCode?: string;
+    integrationCode?: number;
   };
 }
 
@@ -108,8 +116,6 @@ export const useUserStore = create<UserStore>()(
         try {
           // Fetch user profile from /user/profile/:id endpoint
           const response = await userAPI.getProfile(userId);
-          console.log("Server response:", response);
-
           // Store non-sensitive user data locally
           const userData: UserProfile = {
             id: response.id || response._id,
@@ -128,6 +134,8 @@ export const useUserStore = create<UserStore>()(
             totalTransactions: response.totalTransactions,
             joinDate: response.createdAt, // Map createdAt to joinDate
             accountStatus: response.status, // Map status to accountStatus
+            transactionPin: response.transactionPin, // Add transaction pin
+            virtualAccount: response.virtualAccount, // Add virtual account
           };
 
           set({
@@ -229,7 +237,8 @@ export const useUserStore = create<UserStore>()(
                   ...state.userProfile,
                   virtualAccount: {
                     ...response.virtualAccount,
-                    isActive: true, // Add isActive field
+                    isActive: true, // Add isActive field for backward compatibility
+                    status: response.virtualAccount.status || "active", // Set status from server response
                   },
                   isVerified:
                     response.isVerified || state.userProfile.isVerified,
@@ -241,6 +250,33 @@ export const useUserStore = create<UserStore>()(
           console.log("Virtual account created and profile updated");
         } catch (error) {
           console.error("Failed to create virtual account:", error);
+
+          // If virtual account already exists, refresh user profile to get the existing account
+          if (
+            error instanceof Error &&
+            error.message.includes("Virtual account already exists")
+          ) {
+            console.log(
+              "Virtual account already exists on server, refreshing profile...",
+            );
+            try {
+              // Refresh user profile to get existing virtual account
+              const userId =
+                userProfile?.id ||
+                (userProfile as any)?._id ||
+                (userProfile as any)?.userId ||
+                userProfile?.username;
+              if (userId) {
+                await get().fetchUserProfile(userId);
+                console.log(
+                  "Profile refreshed after detecting existing virtual account",
+                );
+              }
+            } catch (refreshError) {
+              console.error("Failed to refresh profile:", refreshError);
+            }
+          }
+
           set({
             isLoading: false,
             error:
@@ -255,7 +291,9 @@ export const useUserStore = create<UserStore>()(
       hasVirtualAccount: () => {
         const { userProfile } = get();
         return (
-          !!userProfile?.virtualAccount && userProfile.virtualAccount.isActive
+          !!userProfile?.virtualAccount &&
+          (userProfile.virtualAccount.isActive ||
+            userProfile.virtualAccount.status === "active")
         );
       },
     }),

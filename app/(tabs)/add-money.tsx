@@ -56,23 +56,12 @@ export default function AddMoneyScreen() {
   }, [isDepositDataStale, fetchDepositHistory]);
 
   const handleCreateAccount = async () => {
-    console.log(
-      "handleCreateAccount called with BVN:",
-      bvn,
-      "length:",
-      bvn.length,
-    );
-    console.log("userLoading state:", userLoading);
-
     if (!bvn || bvn.length < 11) {
-      console.log("BVN validation failed");
       return;
     }
 
     try {
-      console.log("Calling createVirtualAccount...");
       await createVirtualAccount(bvn);
-      console.log("Virtual account created successfully");
 
       // Clear BVN input
       setBvn("");
@@ -80,7 +69,6 @@ export default function AddMoneyScreen() {
       // Show success modal
       setShowSuccessModal(true);
     } catch (error) {
-      console.error("Failed to create virtual account:", error);
       Alert.alert(
         "Error",
         "Failed to create virtual account. Please try again.",
@@ -150,7 +138,7 @@ export default function AddMoneyScreen() {
                 <View>
                   <Text style={styles.vaSmall}>Virtual Account</Text>
                   <Text style={styles.vaBank}>
-                    {userProfile?.virtualAccount?.provider || "TOPUPAFRICA"}
+                    {userProfile?.virtualAccount?.bankName || "TOPUPAFRICA"}
                   </Text>
                 </View>
                 <Ionicons name="card" size={28} color="rgba(255,255,255,0.8)" />
@@ -440,20 +428,6 @@ export default function AddMoneyScreen() {
                 Creating your virtual account...
               </Text>
             )}
-            <Text
-              style={{ color: colors.textMuted, fontSize: 12, marginTop: 10 }}
-            >
-              User ID: {userProfile?.id || "undefined"} | Username:{" "}
-              {userProfile?.username || "undefined"}
-            </Text>
-            {/* Debug info - remove in production */}
-            <Text
-              style={{ color: colors.textMuted, fontSize: 12, marginTop: 10 }}
-            >
-              Debug: BVN length: {bvn.length}, userLoading:{" "}
-              {userLoading.toString()}, Disabled:{" "}
-              {(userLoading || bvn.length < 11).toString()}
-            </Text>
           </View>
         )}
       </ScrollView>
