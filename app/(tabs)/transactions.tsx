@@ -88,15 +88,6 @@ export default function TransactionsScreen() {
     return filtered;
   }, [transactions, search, statusFilter]);
 
-  // Handle transaction press
-  const handleTransactionPress = (transaction: Transaction) => {
-    Alert.alert(
-      "Transaction Details",
-      `Type: ${transaction.type}\nAmount: ₦${transaction.amount.toLocaleString()}\nStatus: ${transaction.status}\nReference: ${transaction.reference}`,
-      [{ text: "OK", style: "default" }],
-    );
-  };
-
   // Handle refresh
   const handleRefresh = () => {
     refreshTransactions().catch((error) => {
@@ -202,7 +193,6 @@ export default function TransactionsScreen() {
         <View style={styles.listContainer}>
           <TransactionList
             transactions={filteredTransactions}
-            onTransactionPress={handleTransactionPress}
             onRefresh={handleRefresh}
             loading={isLoading}
             emptyType={search ? "filtered" : "all"}

@@ -1,9 +1,9 @@
-import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { useColors } from '@/hooks/useTheme';
-import { useTransactionStore } from '@/store/transactionStore';
-import TransactionItem from './TransactionItem';
-import EmptyTransactionState from './EmptyTransactionState';
+import React from "react";
+import { View, Text, StyleSheet, Pressable } from "react-native";
+import { useColors } from "@/hooks/useTheme";
+import { useTransactionStore } from "@/store/transactionStore";
+import TransactionItem from "./TransactionItem";
+import EmptyTransactionState from "./EmptyTransactionState";
 
 interface RecentTransactionsProps {
   maxItems?: number;
@@ -21,20 +21,10 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
   onViewAll,
 }) => {
   const colors = useColors();
-  
-  // Transaction store hooks
-  const {
-    recentTransactions,
-    isLoading,
-    fetchRecentTransactions,
-  } = useTransactionStore();
 
-  // Handle transaction press
-  const handleTransactionPress = (transaction: any) => {
-    // For now, just log the transaction
-    // In a real app, this would navigate to transaction details
-    console.log('Transaction pressed:', transaction);
-  };
+  // Transaction store hooks
+  const { recentTransactions, isLoading, fetchRecentTransactions } =
+    useTransactionStore();
 
   // Handle view all press
   const handleViewAll = () => {
@@ -71,16 +61,12 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
             </Text>
           </View>
         ) : displayTransactions.length === 0 ? (
-          <EmptyTransactionState 
-            type="recent" 
-            icon="time-outline"
-          />
+          <EmptyTransactionState type="recent" icon="time-outline" />
         ) : (
           displayTransactions.map((transaction) => (
             <TransactionItem
               key={transaction._id}
               transaction={transaction}
-              onPress={handleTransactionPress}
               showDate={false}
               compact={compact}
             />
@@ -96,29 +82,29 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 16,
   },
   title: {
     fontSize: 18,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: "Nunito_700Bold",
   },
   viewAllText: {
     fontSize: 14,
-    fontFamily: 'Nunito_600SemiBold',
+    fontFamily: "Nunito_600SemiBold",
   },
   transactionsContainer: {
     gap: 0,
   },
   loadingContainer: {
     paddingVertical: 20,
-    alignItems: 'center',
+    alignItems: "center",
   },
   loadingText: {
     fontSize: 14,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: "Nunito_400Regular",
   },
 });
 

@@ -1,8 +1,9 @@
-import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useColors } from '@/hooks/useTheme';
-import { Transaction } from '@/store/transactionStore';
+import React from "react";
+import { View, Text, StyleSheet, Pressable } from "react-native";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { useColors } from "@/hooks/useTheme";
+import { Transaction } from "@/store/transactionStore";
 
 interface TransactionItemProps {
   transaction: Transaction;
@@ -22,34 +23,38 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
   compact = false,
 }) => {
   const colors = useColors();
+  const router = useRouter();
 
   // Get transaction type icon and color
   const getTransactionIcon = (type: string) => {
     switch (type) {
-      case 'deposit':
-        return { icon: 'card-outline' as const, color: colors.success };
-      case 'airtime':
-        return { icon: 'phone-portrait-outline' as const, color: colors.blue };
-      case 'data':
-        return { icon: 'wifi-outline' as const, color: colors.purple };
-      case 'electricity':
-        return { icon: 'flash-outline' as const, color: colors.warning };
-      case 'cable':
-        return { icon: 'tv-outline' as const, color: colors.error };
+      case "deposit":
+        return { icon: "card-outline" as const, color: colors.success };
+      case "airtime":
+        return { icon: "phone-portrait-outline" as const, color: colors.blue };
+      case "data":
+        return { icon: "wifi-outline" as const, color: colors.purple };
+      case "electricity":
+        return { icon: "flash-outline" as const, color: colors.warning };
+      case "cable":
+        return { icon: "tv-outline" as const, color: colors.error };
       default:
-        return { icon: 'receipt-outline' as const, color: colors.textSecondary };
+        return {
+          icon: "receipt-outline" as const,
+          color: colors.textSecondary,
+        };
     }
   };
 
   // Get status color and text
   const getStatusStyle = (status: string) => {
     switch (status) {
-      case 'completed':
-        return { color: colors.success, text: 'Completed' };
-      case 'failed':
-        return { color: colors.error, text: 'Failed' };
-      case 'pending':
-        return { color: colors.warning, text: 'Pending' };
+      case "completed":
+        return { color: colors.success, text: "Completed" };
+      case "failed":
+        return { color: colors.error, text: "Failed" };
+      case "pending":
+        return { color: colors.warning, text: "Pending" };
       default:
         return { color: colors.textMuted, text: status };
     }
@@ -58,20 +63,38 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
   // Format transaction description
   const getTransactionDescription = (transaction: Transaction) => {
     const { type, details } = transaction;
-    
+
     switch (type) {
-      case 'deposit':
-        return 'Wallet Deposit';
-      case 'airtime':
-        return details?.network ? `${details.network} Airtime` : 'Airtime Recharge';
-      case 'data':
-        return details?.network ? `${details.network} Data` : 'Data Purchase';
-      case 'electricity':
-        return details?.provider ? `${details.provider} Electricity` : 'Electricity Bill';
-      case 'cable':
-        return details?.provider ? `${details.provider} TV` : 'Cable Subscription';
+      case "deposit":
+        return "Wallet Deposit";
+      case "airtime":
+        return details?.network
+          ? `${details.network} Airtime`
+          : "Airtime Recharge";
+      case "data":
+        return details?.network ? `${details.network} Data` : "Data Purchase";
+      case "electricity":
+        return details?.provider
+          ? `${details.provider} Electricity`
+          : "Electricity Bill";
+      case "cable":
+        return details?.provider
+          ? `${details.provider} TV`
+          : "Cable Subscription";
       default:
-        return type.charAt(0).toUpperCase() + type.slice(1);
+        // Explicitly cast to string to avoid TypeScript errors
+        const typeString = type as string;
+        return typeString.charAt(0).toUpperCase() + typeString.slice(1);
+    }
+  };
+
+  // Handle transaction press - navigate to details or call custom onPress
+  const handlePress = () => {
+    if (onPress) {
+      onPress(transaction);
+    } else {
+      // Default navigation to transaction details
+      router.push(`/transaction/${transaction._id}`);
     }
   };
 
@@ -88,27 +111,29 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffDays === 0) {
-      return 'Today';
+      return "Today";
     } else if (diffDays === 1) {
-      return 'Yesterday';
+      return "Yesterday";
     } else if (diffDays < 7) {
       return `${diffDays} days ago`;
     } else {
-      return date.toLocaleDateString('en-NG', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
+      return date.toLocaleDateString("en-NG", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
       });
     }
   };
 
   const { icon, color } = getTransactionIcon(transaction.type);
-  const { color: statusColor, text: statusText } = getStatusStyle(transaction.status);
+  const { color: statusColor, text: statusText } = getStatusStyle(
+    transaction.status,
+  );
   const description = getTransactionDescription(transaction);
 
   return (
     <Pressable
-      onPress={() => onPress?.(transaction)}
+      onPress={handlePress}
       style={[
         styles.container,
         { backgroundColor: colors.bgCard, borderColor: colors.border },
@@ -206,12 +231,12 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
     marginBottom: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   compactContainer: {
     padding: 12,
@@ -221,22 +246,22 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
   },
   detailsContainer: {
     flex: 1,
   },
   headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 4,
   },
   description: {
     fontSize: 16,
-    fontFamily: 'Nunito_600SemiBold',
+    fontFamily: "Nunito_600SemiBold",
     flex: 1,
     marginRight: 8,
   },
@@ -245,15 +270,15 @@ const styles = StyleSheet.create({
   },
   amount: {
     fontSize: 16,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: "Nunito_700Bold",
   },
   compactAmount: {
     fontSize: 14,
   },
   footerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   detailsInfo: {
     flex: 1,
@@ -261,11 +286,11 @@ const styles = StyleSheet.create({
   },
   detailsText: {
     fontSize: 12,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: "Nunito_400Regular",
     marginBottom: 2,
   },
   statusContainer: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   statusBadge: {
     paddingHorizontal: 8,
@@ -275,12 +300,12 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 10,
-    fontFamily: 'Nunito_600SemiBold',
-    textTransform: 'uppercase',
+    fontFamily: "Nunito_600SemiBold",
+    textTransform: "uppercase",
   },
   dateText: {
     fontSize: 11,
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: "Nunito_400Regular",
   },
 });
 
