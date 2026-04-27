@@ -19,13 +19,12 @@ import { useWalletStore } from "@/store/walletStore";
 import { useTransactionStore } from "@/store/transactionStore";
 import { useUserStore } from "@/store/userStore";
 import { useReferralStore } from "@/store/referralStore";
-import { TransactionCard } from "@/components/ui/TransactionCard";
-import { EmptyState } from "@/components/ui/EmptyState";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { AirtimeModal } from "@/components/services/AirtimeModal";
 import { DataModal } from "@/components/services/DataModal";
 import { ElectricityModal } from "@/components/services/ElectricityModal";
 import { CableModal } from "@/components/services/CableModal";
+import RecentTransactions from "@/components/transactions/RecentTransactions";
 
 type ServiceType =
   | "airtime"
@@ -59,7 +58,7 @@ export default function DashboardScreen() {
   const colors = useColors();
   const { user } = useAuthStore();
   const { balance } = useWalletStore();
-  const { recentTransactions } = useTransactionStore();
+  const { recentTransactions, fetchRecentTransactions } = useTransactionStore();
   const {
     userProfile,
     fetchUserProfile,
@@ -104,6 +103,15 @@ export default function DashboardScreen() {
       syncBalanceFromProfile();
     }
   }, [userProfile?.balance, syncBalanceFromProfile]);
+
+  // Fetch recent transactions on component mount
+  useEffect(() => {
+    if (user?.id) {
+      fetchRecentTransactions().catch((error) => {
+        console.error("Failed to fetch recent transactions:", error);
+      });
+    }
+  }, [user?.id, fetchRecentTransactions]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -262,34 +270,11 @@ export default function DashboardScreen() {
 
         {/* Recent Transactions */}
         <View style={styles.section}>
-          <View style={styles.sectionRow}>
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-              Recent Transactions
-            </Text>
-            <Pressable
-              onPress={() => router.push("/(tabs)/transactions")}
-              style={styles.viewAllBtn}
-            >
-              <Text style={[styles.viewAllText, { color: colors.purple }]}>
-                View All
-              </Text>
-              <Ionicons name="arrow-forward" size={14} color={colors.purple} />
-            </Pressable>
-          </View>
-
-          {recentTransactions.length === 0 ? (
-            <EmptyState
-              icon="receipt-outline"
-              title="No Transactions"
-              subtitle="Your recent transactions will appear here"
-            />
-          ) : (
-            <View style={styles.txList}>
-              {recentTransactions.slice(0, 3).map((tx) => (
-                <TransactionCard key={tx.id} transaction={tx} />
-              ))}
-            </View>
-          )}
+          <RecentTransactions
+            maxItems={3}
+            compact={true}
+            onViewAll={() => router.push("/(tabs)/transactions")}
+          />
         </View>
       </ScrollView>
 

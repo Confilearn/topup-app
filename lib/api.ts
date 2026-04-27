@@ -270,6 +270,23 @@ export const userAPI = {
   },
 };
 
+// Transaction API
+export const transactionAPI = {
+  // Get all user transactions - matches GET /user/transactions
+  getTransactions: async () => {
+    const response = await apiRequest("/user/transactions");
+    return response;
+  },
+
+  // Get transaction status - matches POST /vtu/transaction/:reference
+  getTransactionStatus: async (reference: string) => {
+    const response = await apiRequest(`/vtu/transaction/${reference}`, {
+      method: "POST",
+    });
+    return response;
+  },
+};
+
 // Public API endpoints (no auth required)
 export const publicAPI = {
   // Get referral settings - matches GET /referral-settings
