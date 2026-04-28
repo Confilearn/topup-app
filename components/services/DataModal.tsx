@@ -29,7 +29,7 @@ export function DataModal({ visible, onClose }: DataModalProps) {
     if (!selectedService || !phone || balance < total) return;
 
     try {
-      // Call the VTU API to purchase data
+      // Call VTU API to purchase data
       await purchaseData({
         phone,
         plan: selectedService.description,
@@ -57,8 +57,7 @@ export function DataModal({ visible, onClose }: DataModalProps) {
       });
     } catch (error) {
       console.error("Data purchase failed:", error);
-      // TODO: Show error message to user
-      return;
+      throw error; // Re-throw to let ServiceSheetModal handle it
     }
 
     setPhone("");
@@ -101,69 +100,54 @@ export function DataModal({ visible, onClose }: DataModalProps) {
               Select Data Plan
             </Text>
             <ScrollView style={styles.planList}>
-              {dataServices.map((service) => (
-                <Pressable
-                  key={service.serviceID}
-                  style={[
-                    styles.planItem,
-                    {
-                      backgroundColor: colors.bgCardAlt,
-                      borderColor: colors.border,
-                    },
-                    selectedService?.serviceID === service.serviceID && {
-                      borderColor: colors.purple,
-                      backgroundColor: `${colors.purple}15`,
-                    },
-                  ]}
-                  onPress={() => setSelectedService(service)}
-                >
-                  <View style={styles.planInfo}>
-                    <Text
-                      style={[styles.planName, { color: colors.textPrimary }]}
-                    >
-                      {service.description}
-                    </Text>
-                    <Text
-                      style={[styles.planValidity, { color: colors.textMuted }]}
-                    >
-                      {service.network} •{" "}
-                      {service.validity || "No validity info"}
-                    </Text>
-                    {service.originalAmount && (
+              {dataServices.length > 0 ? (
+                dataServices.map((service) => (
+                  <Pressable
+                    key={service.serviceID}
+                    style={[
+                      styles.planItem,
+                      {
+                        backgroundColor: colors.bgCardAlt,
+                        borderColor: colors.border,
+                      },
+                      selectedService?.serviceID === service.serviceID && {
+                        borderColor: colors.purple,
+                        backgroundColor: `${colors.purple}15`,
+                      },
+                    ]}
+                    onPress={() => setSelectedService(service)}
+                  >
+                    <View style={styles.planInfo}>
+                      <Text
+                        style={[styles.planName, { color: colors.textPrimary }]}
+                      >
+                        {service.description}
+                      </Text>
                       <Text
                         style={[
-                          styles.originalPrice,
+                          styles.planValidity,
                           { color: colors.textMuted },
                         ]}
                       >
-                        Original: ₦{service.originalAmount}
+                        {service.network} •{" "}
+                        {service.validity || "No validity info"}
                       </Text>
-                    )}
-                  </View>
-                  <View style={styles.planPricing}>
-                    <Text
-                      style={[
-                        styles.planPrice,
-                        {
-                          color:
-                            selectedService?.serviceID === service.serviceID
-                              ? colors.purpleLight
-                              : colors.textPrimary,
-                        },
-                      ]}
-                    >
-                      ₦{Number(service.amount).toLocaleString()}
-                    </Text>
-                    {service.markupPercentage && (
-                      <Text
-                        style={[styles.markupText, { color: colors.textMuted }]}
-                      >
-                        +{service.markupPercentage}%
-                      </Text>
-                    )}
-                  </View>
-                </Pressable>
-              ))}
+                      {service.originalAmount && (
+                        <Text
+                          style={[
+                            styles.originalPrice,
+                            { color: colors.textMuted },
+                          ]}
+                        >
+                          Original: ₦{service.originalAmount}
+                        </Text>
+                      )}
+                    </View>
+                  </Pressable>
+                ))
+              ) : (
+                <></>
+              )}
             </ScrollView>
           </View>
 
@@ -225,4 +209,10 @@ const styles = StyleSheet.create({
   markupText: { fontSize: 10, fontFamily: "Nunito_400Regular" },
   feeBox: { padding: 12, borderRadius: 10, borderWidth: 1 },
   feeText: { fontSize: 12, fontFamily: "Nunito_500Medium" },
+  noServicesText: {
+    fontSize: 14,
+    fontFamily: "Nunito_400Regular",
+    textAlign: "center",
+    padding: 20,
+  },
 });

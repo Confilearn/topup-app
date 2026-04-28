@@ -18,6 +18,7 @@ interface User {
   phone?: string;
   joinDate?: string;
   accountStatus?: string;
+  transactionPin?: string;
 }
 
 // Auth state interface

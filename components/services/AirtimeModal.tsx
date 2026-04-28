@@ -55,8 +55,7 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
       });
     } catch (error) {
       console.error("Airtime purchase failed:", error);
-      // TODO: Show error message to user
-      return;
+      throw error; // Re-throw to let ServiceSheetModal handle it
     }
 
     setPhone("");
@@ -93,40 +92,48 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
               Select Network
             </Text>
             <View style={styles.chipRow}>
-              {airtimeServices.map((service) => (
-                <Pressable
-                  key={service.serviceID}
-                  style={[
-                    styles.chip,
-                    {
-                      backgroundColor: colors.bgCardAlt,
-                      borderColor: colors.border,
-                    },
-                    selectedService?.serviceID === service.serviceID && {
-                      backgroundColor: `${colors.purple}25`,
-                      borderColor: colors.purple,
-                    },
-                  ]}
-                  onPress={() => {
-                    setSelectedService(service);
-                    setAmount(""); // Clear amount when switching services
-                  }}
-                >
-                  <Text
+              {airtimeServices.length > 0 ? (
+                airtimeServices.map((service) => (
+                  <Pressable
+                    key={service.serviceID}
                     style={[
-                      styles.chipText,
+                      styles.chip,
                       {
-                        color:
-                          selectedService?.serviceID === service.serviceID
-                            ? colors.purpleLight
-                            : colors.textMuted,
+                        backgroundColor: colors.bgCardAlt,
+                        borderColor: colors.border,
+                      },
+                      selectedService?.serviceID === service.serviceID && {
+                        backgroundColor: `${colors.purple}25`,
+                        borderColor: colors.purple,
                       },
                     ]}
+                    onPress={() => {
+                      setSelectedService(service);
+                      setAmount(""); // Clear amount when switching services
+                    }}
                   >
-                    {service.description}
-                  </Text>
-                </Pressable>
-              ))}
+                    <Text
+                      style={[
+                        styles.chipText,
+                        {
+                          color:
+                            selectedService?.serviceID === service.serviceID
+                              ? colors.purpleLight
+                              : colors.textMuted,
+                        },
+                      ]}
+                    >
+                      {service.description}
+                    </Text>
+                  </Pressable>
+                ))
+              ) : (
+                <Text
+                  style={[styles.noServicesText, { color: colors.textMuted }]}
+                >
+                  No airtime services available
+                </Text>
+              )}
             </View>
           </View>
 
@@ -200,4 +207,10 @@ const styles = StyleSheet.create({
   },
   feeText: { fontSize: 12, fontFamily: "Nunito_500Medium", flex: 1 },
   discountText: { fontSize: 12, fontFamily: "Nunito_500Medium", marginTop: 4 },
+  noServicesText: {
+    fontSize: 14,
+    fontFamily: "Nunito_400Regular",
+    textAlign: "center",
+    padding: 20,
+  },
 });
