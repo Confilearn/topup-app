@@ -277,13 +277,76 @@ export const transactionAPI = {
     const response = await apiRequest("/user/transactions");
     return response;
   },
+};
+
+// VTU API endpoints
+export const vtuAPI = {
+  // Get VTU pricing - matches POST /vtu/pricing
+  getPricing: async () => {
+    return apiRequest("/vtu/pricing", {
+      method: "POST",
+    });
+  },
+
+  // Purchase airtime - matches POST /vtu/airtime
+  purchaseAirtime: async (data: {
+    phone: string;
+    amount: number;
+    provider: string;
+    reference?: string;
+  }) => {
+    return apiRequest("/vtu/airtime", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Purchase data bundle - matches POST /vtu/data
+  purchaseData: async (data: {
+    phone: string;
+    plan: string;
+    provider: string;
+    reference?: string;
+  }) => {
+    return apiRequest("/vtu/data", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Pay electricity bill - matches POST /vtu/electricity
+  payElectricity: async (data: {
+    meterNumber: string;
+    amount: number;
+    provider: string;
+    customerName?: string;
+    reference?: string;
+  }) => {
+    return apiRequest("/vtu/electricity", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Subscribe to cable TV - matches POST /vtu/cable
+  subscribeCable: async (data: {
+    smartcardNumber: string;
+    package: string;
+    provider: string;
+    customerName?: string;
+    reference?: string;
+  }) => {
+    return apiRequest("/vtu/cable", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
 
   // Get transaction status - matches POST /vtu/transaction/:reference
   getTransactionStatus: async (reference: string) => {
-    const response = await apiRequest(`/vtu/transaction/${reference}`, {
+    return apiRequest(`/vtu/transaction/${reference}`, {
       method: "POST",
     });
-    return response;
   },
 };
 
