@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useColors } from "@/hooks/useTheme";
 import { Input } from "@/components/ui/Input";
 import { ServiceSheetModal } from "./ServiceSheetModal";
-import { NETWORKS, AIRTIME_AMOUNTS } from "@/lib/mockData";
+import { useVtuStore } from "@/store/vtu-store";
 import { useWalletStore } from "@/store/walletStore";
 import { useTransactionStore } from "@/store/transactionStore";
 
@@ -14,42 +14,60 @@ interface AirtimeModalProps {
 
 export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
   const colors = useColors();
-  const [network, setNetwork] = useState("MTN");
+  const [selectedService, setSelectedService] = useState<any>(null);
   const [phone, setPhone] = useState("");
   const [amount, setAmount] = useState("");
   const { balance, deductBalance } = useWalletStore();
   const { addTransaction } = useTransactionStore();
+  const { airtimeServices, purchaseAirtime } = useVtuStore();
 
   const fee = amount ? Math.round(Number(amount) * 0.1) : 0;
   const total = amount ? Number(amount) + fee : 0;
 
-  const handleConfirmed = () => {
-    if (balance < total) return;
-    deductBalance(total);
-    addTransaction({
-      _id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-      userId: "1", // TODO: Get actual user ID from auth store
-      type: "airtime",
-      amount: total,
-      feeAmount: fee,
-      status: "completed",
-      reference: "TXN-" + Date.now(),
-      fullName: "User", // TODO: Get actual user name
-      createdAt: new Date().toISOString(),
-      details: {
-        mobileNumber: phone,
-        network: network,
-      },
-    });
+  const handleConfirmed = async () => {
+    if (!selectedService || !phone || balance < total) return;
+
+    try {
+      // Call the VTU API to purchase airtime
+      await purchaseAirtime({
+        phone,
+        amount: Number(amount),
+        provider: selectedService.network,
+        reference: `AIR-${Date.now()}`,
+      });
+
+      // Update local state
+      deductBalance(total);
+      addTransaction({
+        _id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        userId: "1", // TODO: Get actual user ID from auth store
+        type: "airtime",
+        amount: total,
+        feeAmount: fee,
+        status: "completed",
+        reference: `AIR-${Date.now()}`,
+        fullName: "User", // TODO: Get actual user name
+        createdAt: new Date().toISOString(),
+        details: {
+          mobileNumber: phone,
+          network: selectedService.network,
+        },
+      });
+    } catch (error) {
+      console.error("Airtime purchase failed:", error);
+      // TODO: Show error message to user
+      return;
+    }
+
     setPhone("");
     setAmount("");
-    setNetwork("MTN");
+    setSelectedService(null);
   };
 
   const handleClose = () => {
     setPhone("");
     setAmount("");
-    setNetwork("MTN");
+    setSelectedService(null);
     onClose();
   };
 
@@ -75,32 +93,37 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
               Select Network
             </Text>
             <View style={styles.chipRow}>
-              {NETWORKS.map((n) => (
+              {airtimeServices.map((service) => (
                 <Pressable
-                  key={n}
+                  key={service.serviceID}
                   style={[
                     styles.chip,
                     {
                       backgroundColor: colors.bgCardAlt,
                       borderColor: colors.border,
                     },
-                    network === n && {
+                    selectedService?.serviceID === service.serviceID && {
                       backgroundColor: `${colors.purple}25`,
                       borderColor: colors.purple,
                     },
                   ]}
-                  onPress={() => setNetwork(n)}
+                  onPress={() => {
+                    setSelectedService(service);
+                    setAmount(""); // Clear amount when switching services
+                  }}
                 >
                   <Text
                     style={[
                       styles.chipText,
                       {
                         color:
-                          network === n ? colors.purpleLight : colors.textMuted,
+                          selectedService?.serviceID === service.serviceID
+                            ? colors.purpleLight
+                            : colors.textMuted,
                       },
                     ]}
                   >
-                    {n}
+                    {service.description}
                   </Text>
                 </Pressable>
               ))}
@@ -118,50 +141,23 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
 
           <View>
             <Text style={[styles.label, { color: colors.textPrimary }]}>
-              Quick Amounts
+              {selectedService
+                ? `Enter Amount for ${selectedService.description}`
+                : "Select a network first"}
             </Text>
-            <View style={styles.chipRow}>
-              {AIRTIME_AMOUNTS.map((a) => (
-                <Pressable
-                  key={a}
-                  style={[
-                    styles.chip,
-                    {
-                      backgroundColor: colors.bgCardAlt,
-                      borderColor: colors.border,
-                    },
-                    amount === String(a) && {
-                      backgroundColor: `${colors.purple}25`,
-                      borderColor: colors.purple,
-                    },
-                  ]}
-                  onPress={() => setAmount(String(a))}
-                >
-                  <Text
-                    style={[
-                      styles.chipText,
-                      {
-                        color:
-                          amount === String(a)
-                            ? colors.purpleLight
-                            : colors.textMuted,
-                      },
-                    ]}
-                  >
-                    ₦{a.toLocaleString()}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+            <Input
+              label="Amount (₦)"
+              placeholder="Enter amount"
+              value={amount}
+              onChangeText={setAmount}
+              keyboardType="number-pad"
+            />
+            {selectedService?.discount && (
+              <Text style={[styles.discountText, { color: colors.success }]}>
+                Discount: {selectedService.discount}
+              </Text>
+            )}
           </View>
-
-          <Input
-            label="Custom Amount (₦)"
-            placeholder="Enter amount"
-            value={amount}
-            onChangeText={setAmount}
-            keyboardType="number-pad"
-          />
 
           {amount ? (
             <View
@@ -203,4 +199,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   feeText: { fontSize: 12, fontFamily: "Nunito_500Medium", flex: 1 },
+  discountText: { fontSize: 12, fontFamily: "Nunito_500Medium", marginTop: 4 },
 });
