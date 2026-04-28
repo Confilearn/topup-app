@@ -4,7 +4,6 @@ import { useColors } from "@/hooks/useTheme";
 import { Input } from "@/components/ui/Input";
 import { ServiceSheetModal } from "./ServiceSheetModal";
 import { useVtuStore } from "@/store/vtu-store";
-import { useWalletStore } from "@/store/walletStore";
 import { useTransactionStore } from "@/store/transactionStore";
 
 interface AirtimeModalProps {
@@ -17,7 +16,6 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
   const [selectedService, setSelectedService] = useState<any>(null);
   const [phone, setPhone] = useState("");
   const [amount, setAmount] = useState("");
-  const { balance, deductBalance } = useWalletStore();
   const { addTransaction } = useTransactionStore();
   const { airtimeServices, purchaseAirtime } = useVtuStore();
 
@@ -25,7 +23,7 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
   const total = amount ? Number(amount) + fee : 0;
 
   const handleConfirmed = async () => {
-    if (!selectedService || !phone || balance < total) return;
+    if (!selectedService || !phone) return;
 
     try {
       // Call the VTU API to purchase airtime
@@ -37,7 +35,6 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
       });
 
       // Update local state
-      deductBalance(total);
       addTransaction({
         _id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
         userId: "1", // TODO: Get actual user ID from auth store

@@ -4,7 +4,6 @@ import { useColors } from "@/hooks/useTheme";
 import { Input } from "@/components/ui/Input";
 import { ServiceSheetModal } from "./ServiceSheetModal";
 import { useVtuStore } from "@/store/vtu-store";
-import { useWalletStore } from "@/store/walletStore";
 import { useTransactionStore } from "@/store/transactionStore";
 
 interface DataModalProps {
@@ -16,7 +15,6 @@ export function DataModal({ visible, onClose }: DataModalProps) {
   const colors = useColors();
   const [selectedService, setSelectedService] = useState<any>(null);
   const [phone, setPhone] = useState("");
-  const { balance, deductBalance } = useWalletStore();
   const { addTransaction } = useTransactionStore();
   const { dataServices, purchaseData } = useVtuStore();
 
@@ -26,7 +24,7 @@ export function DataModal({ visible, onClose }: DataModalProps) {
   const total = selectedService ? Number(selectedService.amount) + fee : 0;
 
   const handleConfirmed = async () => {
-    if (!selectedService || !phone || balance < total) return;
+    if (!selectedService || !phone) return;
 
     try {
       // Call VTU API to purchase data
@@ -38,7 +36,6 @@ export function DataModal({ visible, onClose }: DataModalProps) {
       });
 
       // Update local state
-      deductBalance(total);
       addTransaction({
         _id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
         userId: "1", // TODO: Get actual user ID from auth store

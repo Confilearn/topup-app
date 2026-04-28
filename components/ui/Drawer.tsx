@@ -17,7 +17,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useTheme";
 import { useAuthStore } from "@/store/authStore";
-import { useWalletStore } from "@/store/walletStore";
 import { useThemeStore } from "@/store/themeStore";
 import { useUserStore } from "@/store/userStore";
 
@@ -50,7 +49,6 @@ export function Drawer({ visible, onClose }: DrawerProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuthStore();
-  const { balance, syncBalanceFromProfile } = useWalletStore();
   const { isDark, toggleTheme } = useThemeStore();
   const { userProfile } = useUserStore();
 
@@ -88,13 +86,6 @@ export function Drawer({ visible, onClose }: DrawerProps) {
       ]).start();
     }
   }, [visible]);
-
-  // Sync wallet balance when user profile is updated
-  useEffect(() => {
-    if (userProfile?.balance !== undefined) {
-      syncBalanceFromProfile();
-    }
-  }, [userProfile?.balance, syncBalanceFromProfile]);
 
   const navigate = (route: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -175,7 +166,7 @@ export function Drawer({ visible, onClose }: DrawerProps) {
                 color="rgba(255,255,255,0.9)"
               />
               <Text style={styles.balanceText}>
-                ₦{(userProfile?.balance || balance).toFixed(2)}
+                ₦{(userProfile?.balance || 0).toFixed(2)}
               </Text>
             </View>
             {/* Show verification status if available */}

@@ -15,7 +15,6 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useTheme";
 import { useAuthStore } from "@/store/authStore";
-import { useWalletStore } from "@/store/walletStore";
 import { useTransactionStore } from "@/store/transactionStore";
 import { useUserStore } from "@/store/userStore";
 import { useReferralStore } from "@/store/referralStore";
@@ -58,7 +57,6 @@ const SERVICES = [
 export default function DashboardScreen() {
   const colors = useColors();
   const { user } = useAuthStore();
-  const { balance } = useWalletStore();
   const { recentTransactions, fetchRecentTransactions } = useTransactionStore();
   const {
     userProfile,
@@ -77,7 +75,6 @@ export default function DashboardScreen() {
     lastUpdated: vtuLastUpdated,
     clearCacheAndRefetch,
   } = useVtuStore();
-  const { syncBalanceFromProfile } = useWalletStore();
   const insets = useSafeAreaInsets();
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -103,13 +100,6 @@ export default function DashboardScreen() {
       setCurrentUser(null);
     }
   }, [user?.id, isReferralDataStale, fetchReferralHistory, setCurrentUser]);
-
-  // Sync wallet balance when user profile is updated
-  useEffect(() => {
-    if (userProfile?.balance !== undefined) {
-      syncBalanceFromProfile();
-    }
-  }, [userProfile?.balance, syncBalanceFromProfile]);
 
   // Fetch recent transactions on component mount
   useEffect(() => {
@@ -233,7 +223,7 @@ export default function DashboardScreen() {
           <View style={styles.balanceRow}>
             <Text style={styles.balanceAmount}>
               {balanceVisible
-                ? `₦${(userProfile?.balance || balance).toFixed(2)}`
+                ? `₦${(userProfile?.balance || 0).toFixed(2)}`
                 : "₦••••••"}
             </Text>
             <Pressable

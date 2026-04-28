@@ -4,7 +4,6 @@ import { useColors } from "@/hooks/useTheme";
 import { Input } from "@/components/ui/Input";
 import { ServiceSheetModal } from "./ServiceSheetModal";
 import { useVtuStore } from "@/store/vtu-store";
-import { useWalletStore } from "@/store/walletStore";
 import { useTransactionStore } from "@/store/transactionStore";
 
 interface ElectricityModalProps {
@@ -17,7 +16,6 @@ export function ElectricityModal({ visible, onClose }: ElectricityModalProps) {
   const [selectedService, setSelectedService] = useState<any>(null);
   const [meterNumber, setMeterNumber] = useState("");
   const [amount, setAmount] = useState("");
-  const { balance, deductBalance } = useWalletStore();
   const { addTransaction } = useTransactionStore();
   const { electricityServices, purchaseElectricity } = useVtuStore();
 
@@ -25,7 +23,7 @@ export function ElectricityModal({ visible, onClose }: ElectricityModalProps) {
   const total = amount ? Number(amount) + fee : 0;
 
   const handleConfirmed = async () => {
-    if (!selectedService || !meterNumber || !amount || balance < total) return;
+    if (!selectedService || !meterNumber || !amount) return;
 
     try {
       // Call the VTU API to purchase electricity
@@ -37,7 +35,6 @@ export function ElectricityModal({ visible, onClose }: ElectricityModalProps) {
       });
 
       // Update local state
-      deductBalance(total);
       addTransaction({
         _id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
         userId: "1", // TODO: Get actual user ID from auth store
