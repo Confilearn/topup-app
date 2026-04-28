@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/Input";
 import { ServiceSheetModal } from "./ServiceSheetModal";
 import { useVtuStore } from "@/store/vtu-store";
 import { useTransactionStore } from "@/store/transactionStore";
+import { Ionicons } from "@expo/vector-icons";
 
 interface ElectricityModalProps {
   visible: boolean;
@@ -16,21 +17,41 @@ export function ElectricityModal({ visible, onClose }: ElectricityModalProps) {
   const [selectedService, setSelectedService] = useState<any>(null);
   const [meterNumber, setMeterNumber] = useState("");
   const [amount, setAmount] = useState("");
+  const [showProviderDropdown, setShowProviderDropdown] = useState(false);
+  const [showMeterTypeDropdown, setShowMeterTypeDropdown] = useState(false);
+  const [meterType, setMeterType] = useState("");
   const { addTransaction } = useTransactionStore();
   const { electricityServices, purchaseElectricity } = useVtuStore();
+
+  // Define electricity providers
+  const providers = [
+    { id: "ekedc", name: "EKEDC", description: "Eko Electricity" },
+    { id: "ikedc", name: "IKEDC", description: "Ikeja Electricity" },
+    { id: "phedc", name: "PHEDC", description: "Port Harcourt Electricity" },
+    { id: "kedco", name: "KEDCO", description: "Kano Electricity" },
+    { id: "aedc", name: "AEDC", description: "Abuja Electricity" },
+    { id: "ibedc", name: "IBEDC", description: "Ibadan Electricity" },
+  ];
+
+  // Define meter types
+  const meterTypes = [
+    { id: "prepaid", name: "Prepaid" },
+    { id: "postpaid", name: "Postpaid" },
+  ];
 
   const fee = amount ? Math.round(Number(amount) * 0.1) : 0;
   const total = amount ? Number(amount) + fee : 0;
 
   const handleConfirmed = async () => {
-    if (!selectedService || !meterNumber || !amount) return;
+    if (!selectedService || !meterNumber || !meterType || !amount) return;
 
     try {
       // Call the VTU API to purchase electricity
       await purchaseElectricity({
         meterNumber,
         amount: Number(amount),
-        provider: selectedService.description,
+        provider: selectedService.id,
+        meterType,
         reference: `ELEC-${Date.now()}`,
       });
 
@@ -47,7 +68,7 @@ export function ElectricityModal({ visible, onClose }: ElectricityModalProps) {
         createdAt: new Date().toISOString(),
         details: {
           meterNum: meterNumber,
-          disco: selectedService.description,
+          disco: selectedService.name,
         },
       });
     } catch (error) {
@@ -58,12 +79,14 @@ export function ElectricityModal({ visible, onClose }: ElectricityModalProps) {
     setMeterNumber("");
     setAmount("");
     setSelectedService(null);
+    setMeterType("");
   };
 
   const handleClose = () => {
     setMeterNumber("");
     setAmount("");
     setSelectedService(null);
+    setMeterType("");
     onClose();
   };
 
@@ -74,12 +97,16 @@ export function ElectricityModal({ visible, onClose }: ElectricityModalProps) {
       title="Electricity Bills"
       subtitle="Pay for EKEDC, IKEDC, PHEDC & more"
       proceedLabel={
-        selectedService && amount
-          ? `Pay ₦${total.toLocaleString()} for ${selectedService.description}`
-          : "Select Provider & Enter Amount"
+        selectedService && meterType && amount
+          ? `Pay ₦${total.toLocaleString()} for ${selectedService.name}`
+          : "Select Provider & Enter Details"
       }
-      proceedDisabled={!meterNumber || !amount}
-      onProceed={() => !!(meterNumber && amount)}
+      proceedDisabled={
+        !selectedService || !meterNumber || !meterType || !amount
+      }
+      onProceed={() =>
+        !!(selectedService && meterNumber && meterType && amount)
+      }
       onConfirmed={handleConfirmed}
     >
       {() => (
@@ -88,47 +115,78 @@ export function ElectricityModal({ visible, onClose }: ElectricityModalProps) {
             <Text style={[styles.label, { color: colors.textPrimary }]}>
               Select Provider
             </Text>
-            <View style={styles.chipRow}>
-              {electricityServices.length > 0 ? (
-                electricityServices.map((service) => (
+            <Pressable
+              style={[
+                styles.dropdown,
+                {
+                  backgroundColor: colors.bgCardAlt,
+                  borderColor: colors.border,
+                },
+              ]}
+              onPress={() => setShowProviderDropdown(!showProviderDropdown)}
+            >
+              <Text
+                style={[
+                  styles.dropdownText,
+                  {
+                    color: selectedService
+                      ? colors.textPrimary
+                      : colors.textMuted,
+                  },
+                ]}
+              >
+                {selectedService ? selectedService.name : "Select Provider"}
+              </Text>
+              <Ionicons
+                name={showProviderDropdown ? "chevron-up" : "chevron-down"}
+                size={20}
+                color={colors.textMuted}
+              />
+            </Pressable>
+
+            {showProviderDropdown && (
+              <View
+                style={[
+                  styles.dropdownList,
+                  {
+                    backgroundColor: colors.bgCardAlt,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                {providers.map((provider) => (
                   <Pressable
-                    key={service.serviceID}
+                    key={provider.id}
                     style={[
-                      styles.chip,
+                      styles.dropdownItem,
                       {
-                        backgroundColor: colors.bgCardAlt,
-                        borderColor: colors.border,
-                      },
-                      selectedService?.serviceID === service.serviceID && {
-                        backgroundColor: `${colors.purple}25`,
-                        borderColor: colors.purple,
+                        borderBottomColor: colors.border,
                       },
                     ]}
-                    onPress={() => setSelectedService(service)}
+                    onPress={() => {
+                      setSelectedService(provider);
+                      setShowProviderDropdown(false);
+                    }}
                   >
                     <Text
                       style={[
-                        styles.chipText,
-                        {
-                          color:
-                            selectedService?.serviceID === service.serviceID
-                              ? colors.purpleLight
-                              : colors.textMuted,
-                        },
+                        styles.dropdownItemText,
+                        { color: colors.textPrimary },
                       ]}
                     >
-                      {service.description}
+                      {provider.name}
                     </Text>
+                    {selectedService?.id === provider.id && (
+                      <Ionicons
+                        name="checkmark"
+                        size={16}
+                        color={colors.purple}
+                      />
+                    )}
                   </Pressable>
-                ))
-              ) : (
-                <Text
-                  style={[styles.noServicesText, { color: colors.textMuted }]}
-                >
-                  No electricity providers available
-                </Text>
-              )}
-            </View>
+                ))}
+              </View>
+            )}
           </View>
 
           <Input
@@ -141,50 +199,96 @@ export function ElectricityModal({ visible, onClose }: ElectricityModalProps) {
 
           <View>
             <Text style={[styles.label, { color: colors.textPrimary }]}>
-              Quick Amounts (₦)
+              Meter Type
             </Text>
-            <View style={styles.chipRow}>
-              {[500, 1000, 2000, 5000, 10000, 20000].map((a) => (
-                <Pressable
-                  key={a}
-                  style={[
-                    styles.chip,
-                    {
-                      backgroundColor: colors.bgCardAlt,
-                      borderColor: colors.border,
-                    },
-                    amount === String(a) && {
-                      backgroundColor: `${colors.purple}25`,
-                      borderColor: colors.purple,
-                    },
-                  ]}
-                  onPress={() => setAmount(String(a))}
-                >
-                  <Text
+            <Pressable
+              style={[
+                styles.dropdown,
+                {
+                  backgroundColor: colors.bgCardAlt,
+                  borderColor: colors.border,
+                },
+              ]}
+              onPress={() => setShowMeterTypeDropdown(!showMeterTypeDropdown)}
+            >
+              <Text
+                style={[
+                  styles.dropdownText,
+                  {
+                    color: meterType ? colors.textPrimary : colors.textMuted,
+                  },
+                ]}
+              >
+                {meterType
+                  ? meterType.charAt(0).toUpperCase() + meterType.slice(1)
+                  : "Select Meter Type"}
+              </Text>
+              <Ionicons
+                name={showMeterTypeDropdown ? "chevron-up" : "chevron-down"}
+                size={20}
+                color={colors.textMuted}
+              />
+            </Pressable>
+
+            {showMeterTypeDropdown && (
+              <View
+                style={[
+                  styles.dropdownList,
+                  {
+                    backgroundColor: colors.bgCardAlt,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                {meterTypes.map((type) => (
+                  <Pressable
+                    key={type.id}
                     style={[
-                      styles.chipText,
+                      styles.dropdownItem,
                       {
-                        color:
-                          amount === String(a)
-                            ? colors.purpleLight
-                            : colors.textMuted,
+                        borderBottomColor: colors.border,
                       },
                     ]}
+                    onPress={() => {
+                      setMeterType(type.id);
+                      setShowMeterTypeDropdown(false);
+                    }}
                   >
-                    ₦{a.toLocaleString()}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+                    <Text
+                      style={[
+                        styles.dropdownItemText,
+                        { color: colors.textPrimary },
+                      ]}
+                    >
+                      {type.name}
+                    </Text>
+                    {meterType === type.id && (
+                      <Ionicons
+                        name="checkmark"
+                        size={16}
+                        color={colors.purple}
+                      />
+                    )}
+                  </Pressable>
+                ))}
+              </View>
+            )}
           </View>
 
-          <Input
-            label="Custom Amount (₦)"
-            placeholder="Enter amount"
-            value={amount}
-            onChangeText={setAmount}
-            keyboardType="number-pad"
-          />
+          <View>
+            <Text style={[styles.label, { color: colors.textPrimary }]}>
+              Amount (₦)
+            </Text>
+            <Input
+              placeholder="Enter amount"
+              value={amount}
+              onChangeText={setAmount}
+              keyboardType="number-pad"
+            />
+            <Text style={[styles.minimumText, { color: colors.warning }]}>
+              Minimum purchase amount is ₦1,000
+            </Text>
+          </View>
 
           {amount ? (
             <View
@@ -209,20 +313,32 @@ export function ElectricityModal({ visible, onClose }: ElectricityModalProps) {
 
 const styles = StyleSheet.create({
   label: { fontSize: 14, fontFamily: "Nunito_600SemiBold", marginBottom: 8 },
-  chipRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
-  chip: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 10,
+  dropdown: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
     borderWidth: 1,
   },
-  chipText: { fontSize: 13, fontFamily: "Nunito_600SemiBold" },
+  dropdownText: { fontSize: 16, fontFamily: "Nunito_400Regular" },
+  dropdownList: {
+    marginTop: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    zIndex: 1000,
+  },
+  dropdownItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  dropdownItemText: { fontSize: 16, fontFamily: "Nunito_400Regular" },
+  minimumText: { fontSize: 12, fontFamily: "Nunito_400Regular", marginTop: 4 },
   feeBox: { padding: 12, borderRadius: 10, borderWidth: 1 },
   feeText: { fontSize: 12, fontFamily: "Nunito_500Medium" },
-  noServicesText: {
-    fontSize: 14,
-    fontFamily: "Nunito_400Regular",
-    textAlign: "center",
-    padding: 20,
-  },
 });
