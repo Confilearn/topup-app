@@ -282,9 +282,10 @@ export const transactionAPI = {
 // VTU API endpoints
 export const vtuAPI = {
   // Get VTU pricing - matches POST /vtu/pricing
-  getPricing: async () => {
+  getPricing: async (serviceType?: string) => {
     return apiRequest("/vtu/pricing", {
       method: "POST",
+      body: serviceType ? JSON.stringify({ type: serviceType }) : undefined,
     });
   },
 

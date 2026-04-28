@@ -19,6 +19,7 @@ import { useWalletStore } from "@/store/walletStore";
 import { useTransactionStore } from "@/store/transactionStore";
 import { useUserStore } from "@/store/userStore";
 import { useReferralStore } from "@/store/referralStore";
+import { useVtuStore } from "@/store/vtu-store";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { AirtimeModal } from "@/components/services/AirtimeModal";
 import { DataModal } from "@/components/services/DataModal";
@@ -70,6 +71,12 @@ export default function DashboardScreen() {
     isDataStale: isReferralDataStale,
     setCurrentUser,
   } = useReferralStore();
+  const {
+    fetchServices: fetchVtuServices,
+    isLoading: vtuLoading,
+    lastUpdated: vtuLastUpdated,
+    clearCacheAndRefetch,
+  } = useVtuStore();
   const { syncBalanceFromProfile } = useWalletStore();
   const insets = useSafeAreaInsets();
   const [balanceVisible, setBalanceVisible] = useState(true);
@@ -113,6 +120,28 @@ export default function DashboardScreen() {
     }
   }, [user?.id, fetchRecentTransactions]);
 
+  // Fetch VTU services on component mount (will use cache if available)
+  useEffect(() => {
+    if (user?.id) {
+      fetchVtuServices().catch((error) => {
+        console.error("Failed to fetch VTU services:", error);
+      });
+    }
+  }, [user?.id, fetchVtuServices]);
+
+  // Clear VTU cache and refetch for testing
+  useEffect(() => {
+    if (user?.id) {
+      // Add a delay to let the initial fetch complete, then clear cache
+      setTimeout(() => {
+        console.log("🔄 Triggering cache clear and refetch...");
+        clearCacheAndRefetch().catch((error) => {
+          console.error("Failed to clear cache and refetch:", error);
+        });
+      }, 2000);
+    }
+  }, [user?.id, clearCacheAndRefetch]);
+
   const onRefresh = async () => {
     setRefreshing(true);
 
@@ -135,8 +164,13 @@ export default function DashboardScreen() {
       }
     }
 
-    // Simulate other refresh operations
-    await new Promise((r) => setTimeout(r, 1000));
+    // Refresh VTU services
+    try {
+      await fetchVtuServices(true); // Force refresh
+    } catch (error) {
+      console.error("Failed to refresh VTU services:", error);
+    }
+
     setRefreshing(false);
   };
 
