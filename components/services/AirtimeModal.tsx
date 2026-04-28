@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/Input";
 import { ServiceSheetModal } from "./ServiceSheetModal";
 import { useVtuStore } from "@/store/vtu-store";
 import { useTransactionStore } from "@/store/transactionStore";
+import { Ionicons } from "@expo/vector-icons";
 
 interface AirtimeModalProps {
   visible: boolean;
@@ -16,8 +17,17 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
   const [selectedService, setSelectedService] = useState<any>(null);
   const [phone, setPhone] = useState("");
   const [amount, setAmount] = useState("");
+  const [showNetworkDropdown, setShowNetworkDropdown] = useState(false);
   const { addTransaction } = useTransactionStore();
   const { airtimeServices, purchaseAirtime } = useVtuStore();
+
+  // Define the 4 networks manually
+  const networks = [
+    { id: "mtn", name: "MTN", description: "MTN Nigeria" },
+    { id: "glo", name: "Glo", description: "Globacom" },
+    { id: "airtel", name: "Airtel", description: "Airtel Nigeria" },
+    { id: "9mobile", name: "9mobile", description: "9mobile" },
+  ];
 
   const fee = amount ? Math.round(Number(amount) * 0.1) : 0;
   const total = amount ? Number(amount) + fee : 0;
@@ -30,7 +40,7 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
       await purchaseAirtime({
         phone,
         amount: Number(amount),
-        provider: selectedService.network,
+        provider: selectedService.id,
         reference: `AIR-${Date.now()}`,
       });
 
@@ -47,7 +57,7 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
         createdAt: new Date().toISOString(),
         details: {
           mobileNumber: phone,
-          network: selectedService.network,
+          network: selectedService.id,
         },
       });
     } catch (error) {
@@ -88,50 +98,79 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
             <Text style={[styles.label, { color: colors.textPrimary }]}>
               Select Network
             </Text>
-            <View style={styles.chipRow}>
-              {airtimeServices.length > 0 ? (
-                airtimeServices.map((service) => (
+            <Pressable
+              style={[
+                styles.dropdown,
+                {
+                  backgroundColor: colors.bgCardAlt,
+                  borderColor: colors.border,
+                },
+              ]}
+              onPress={() => setShowNetworkDropdown(!showNetworkDropdown)}
+            >
+              <Text
+                style={[
+                  styles.dropdownText,
+                  {
+                    color: selectedService
+                      ? colors.textPrimary
+                      : colors.textMuted,
+                  },
+                ]}
+              >
+                {selectedService ? selectedService.name : "Select Network"}
+              </Text>
+              <Ionicons
+                name={showNetworkDropdown ? "chevron-up" : "chevron-down"}
+                size={20}
+                color={colors.textMuted}
+              />
+            </Pressable>
+
+            {showNetworkDropdown && (
+              <View
+                style={[
+                  styles.dropdownList,
+                  {
+                    backgroundColor: colors.bgCardAlt,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                {networks.map((network) => (
                   <Pressable
-                    key={service.serviceID}
+                    key={network.id}
                     style={[
-                      styles.chip,
+                      styles.dropdownItem,
                       {
-                        backgroundColor: colors.bgCardAlt,
-                        borderColor: colors.border,
-                      },
-                      selectedService?.serviceID === service.serviceID && {
-                        backgroundColor: `${colors.purple}25`,
-                        borderColor: colors.purple,
+                        borderBottomColor: colors.border,
                       },
                     ]}
                     onPress={() => {
-                      setSelectedService(service);
+                      setSelectedService(network);
+                      setShowNetworkDropdown(false);
                       setAmount(""); // Clear amount when switching services
                     }}
                   >
                     <Text
                       style={[
-                        styles.chipText,
-                        {
-                          color:
-                            selectedService?.serviceID === service.serviceID
-                              ? colors.purpleLight
-                              : colors.textMuted,
-                        },
+                        styles.dropdownItemText,
+                        { color: colors.textPrimary },
                       ]}
                     >
-                      {service.description}
+                      {network.name}
                     </Text>
+                    {selectedService?.id === network.id && (
+                      <Ionicons
+                        name="checkmark"
+                        size={16}
+                        color={colors.purple}
+                      />
+                    )}
                   </Pressable>
-                ))
-              ) : (
-                <Text
-                  style={[styles.noServicesText, { color: colors.textMuted }]}
-                >
-                  No airtime services available
-                </Text>
-              )}
-            </View>
+                ))}
+              </View>
+            )}
           </View>
 
           <Input
@@ -143,25 +182,13 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
             testID="phone-input"
           />
 
-          <View>
-            <Text style={[styles.label, { color: colors.textPrimary }]}>
-              {selectedService
-                ? `Enter Amount for ${selectedService.description}`
-                : "Select a network first"}
-            </Text>
-            <Input
-              label="Amount (₦)"
-              placeholder="Enter amount"
-              value={amount}
-              onChangeText={setAmount}
-              keyboardType="number-pad"
-            />
-            {selectedService?.discount && (
-              <Text style={[styles.discountText, { color: colors.success }]}>
-                Discount: {selectedService.discount}
-              </Text>
-            )}
-          </View>
+          <Input
+            label="Amount (₦)"
+            placeholder="Enter amount"
+            value={amount}
+            onChangeText={setAmount}
+            keyboardType="number-pad"
+          />
 
           {amount ? (
             <View
@@ -186,14 +213,31 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
 
 const styles = StyleSheet.create({
   label: { fontSize: 14, fontFamily: "Nunito_600SemiBold", marginBottom: 8 },
-  chipRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
-  chip: {
-    paddingVertical: 8,
+  dropdown: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
-    borderRadius: 10,
+    paddingVertical: 12,
+    borderRadius: 8,
     borderWidth: 1,
   },
-  chipText: { fontSize: 13, fontFamily: "Nunito_600SemiBold" },
+  dropdownText: { fontSize: 16, fontFamily: "Nunito_400Regular" },
+  dropdownList: {
+    marginTop: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    zIndex: 1000,
+  },
+  dropdownItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  dropdownItemText: { fontSize: 16, fontFamily: "Nunito_400Regular" },
   feeBox: {
     flexDirection: "row",
     gap: 8,
@@ -203,11 +247,4 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   feeText: { fontSize: 12, fontFamily: "Nunito_500Medium", flex: 1 },
-  discountText: { fontSize: 12, fontFamily: "Nunito_500Medium", marginTop: 4 },
-  noServicesText: {
-    fontSize: 14,
-    fontFamily: "Nunito_400Regular",
-    textAlign: "center",
-    padding: 20,
-  },
 });
