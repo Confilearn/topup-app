@@ -137,13 +137,7 @@ export function ServiceSheetModal({
       >
         <Pressable style={styles.overlay} onPress={handleClose}>
           <Pressable
-            style={[
-              styles.sheet,
-              {
-                backgroundColor: colors.bgSecondary,
-                paddingBottom: Platform.OS === "ios" ? 40 : 24,
-              },
-            ]}
+            style={[styles.sheet, { backgroundColor: colors.bgSecondary }]}
             onPress={() => {}}
           >
             <View style={[styles.handle, { backgroundColor: colors.border }]} />
@@ -169,8 +163,9 @@ export function ServiceSheetModal({
                 </Text>
 
                 <ScrollView
-                  showsVerticalScrollIndicator={false}
-                  style={styles.scroll}
+                  showsVerticalScrollIndicator={true}
+                  style={{ flex: 1 }}
+                  contentContainerStyle={{ paddingBottom: 20 }}
                 >
                   <View style={styles.form}>
                     {children(false)}
@@ -342,10 +337,12 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   sheet: {
+    width: "100%",
+    height: "85%",
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
     paddingHorizontal: 22,
-    maxHeight: "90%",
+    paddingTop: 20,
   },
   handle: {
     width: 40,
