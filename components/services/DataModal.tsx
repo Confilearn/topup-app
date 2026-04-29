@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/Input";
 import { ServiceSheetModal } from "./ServiceSheetModal";
 import { useVtuStore } from "@/store/vtu-store";
 import { useTransactionStore } from "@/store/transactionStore";
+import { useAuthStore } from "@/store/authStore";
 import { Ionicons } from "@expo/vector-icons";
 
 interface DataModalProps {
@@ -14,6 +15,7 @@ interface DataModalProps {
 
 export function DataModal({ visible, onClose }: DataModalProps) {
   const colors = useColors();
+  const { user } = useAuthStore();
   const [selectedNetwork, setSelectedNetwork] = useState<any>(null);
   const [phone, setPhone] = useState("");
   const [dataType, setDataType] = useState("");
@@ -87,20 +89,22 @@ export function DataModal({ visible, onClose }: DataModalProps) {
       await purchaseData({
         phone,
         plan: `${selectedNetwork.name} ${selectedPlan.size} - N${selectedPlan.price} (${selectedPlan.validity})`,
-        provider: selectedNetwork.id,
+        serviceID: selectedNetwork.serviceID || selectedNetwork.id,
+        network: selectedNetwork.network || selectedNetwork.id,
         reference: `DATA-${Date.now()}`,
       });
 
       // Update local state
       addTransaction({
         _id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-        userId: "1", // TODO: Get actual user ID from auth store
+        userId: user?.id || "unknown",
         type: "data",
         amount: total,
         feeAmount: fee,
         status: "completed",
         reference: `DATA-${Date.now()}`,
-        fullName: "User", // TODO: Get actual user name
+        fullName:
+          `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "User",
         createdAt: new Date().toISOString(),
         details: {
           mobileNumber: phone,

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/Input";
 import { ServiceSheetModal } from "./ServiceSheetModal";
 import { useVtuStore } from "@/store/vtu-store";
 import { useTransactionStore } from "@/store/transactionStore";
+import { useAuthStore } from "@/store/authStore";
 import { Ionicons } from "@expo/vector-icons";
 
 interface AirtimeModalProps {
@@ -14,6 +15,7 @@ interface AirtimeModalProps {
 
 export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
   const colors = useColors();
+  const { user } = useAuthStore();
   const [selectedService, setSelectedService] = useState<any>(null);
   const [phone, setPhone] = useState("");
   const [amount, setAmount] = useState("");
@@ -21,13 +23,14 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
   const { addTransaction } = useTransactionStore();
   const { airtimeServices, purchaseAirtime } = useVtuStore();
 
-  // Define the 4 networks manually
-  const networks = [
-    { id: "mtn", name: "MTN", description: "MTN Nigeria" },
-    { id: "glo", name: "Glo", description: "Globacom" },
-    { id: "airtel", name: "Airtel", description: "Airtel Nigeria" },
-    { id: "9mobile", name: "9mobile", description: "9mobile" },
-  ];
+  // Use real airtime services from the store
+  const networks = airtimeServices.map((service) => ({
+    id: service.network || service.serviceID,
+    name: (service.network || service.serviceID || "").toUpperCase(),
+    description: service.description,
+    serviceID: service.serviceID,
+    network: service.network || service.serviceID,
+  }));
 
   const fee = amount ? Math.round(Number(amount) * 0.1) : 0;
   const total = amount ? Number(amount) + fee : 0;
@@ -40,24 +43,26 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
       await purchaseAirtime({
         phone,
         amount: Number(amount),
-        provider: selectedService.id,
+        serviceID: selectedService.serviceID || selectedService.id,
+        network: selectedService.network || selectedService.id,
         reference: `AIR-${Date.now()}`,
       });
 
       // Update local state
       addTransaction({
         _id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-        userId: "1", // TODO: Get actual user ID from auth store
+        userId: user?.id || "unknown",
         type: "airtime",
         amount: total,
         feeAmount: fee,
         status: "completed",
         reference: `AIR-${Date.now()}`,
-        fullName: "User", // TODO: Get actual user name
+        fullName:
+          `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "User",
         createdAt: new Date().toISOString(),
         details: {
           mobileNumber: phone,
-          network: selectedService.id,
+          network: selectedService.network || selectedService.id,
         },
       });
     } catch (error) {

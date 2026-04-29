@@ -293,12 +293,19 @@ export const vtuAPI = {
   purchaseAirtime: async (data: {
     phone: string;
     amount: number;
-    provider: string;
+    serviceID: string;
+    network: string;
     reference?: string;
   }) => {
     return apiRequest("/vtu/airtime", {
       method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        serviceID: data.serviceID,
+        amount: data.amount,
+        mobileNumber: data.phone,
+        network: data.network,
+        originalAmount: data.amount, // Send original amount for API calculation
+      }),
     });
   },
 
@@ -306,12 +313,19 @@ export const vtuAPI = {
   purchaseData: async (data: {
     phone: string;
     plan: string;
-    provider: string;
+    serviceID: string;
+    network: string;
     reference?: string;
   }) => {
     return apiRequest("/vtu/data", {
       method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        serviceID: data.serviceID,
+        mobileNumber: data.phone,
+        network: data.network,
+        plan: data.plan,
+        amount: parseFloat(data.plan.match(/N(\d+)/)?.[1] || "0"), // Extract amount from plan string
+      }),
     });
   },
 
