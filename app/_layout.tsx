@@ -13,19 +13,30 @@ import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { useThemeStore } from "@/store/themeStore";
 import { queryClient } from "@/lib/query-client";
 
 SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav() {
+  const { isDark } = useThemeStore();
+
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="transaction" />
-    </Stack>
+    <>
+      <StatusBar
+        style={isDark ? "light" : "dark"}
+        backgroundColor={isDark ? "#080818" : "#ffffff"}
+        translucent={false}
+      />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="transaction" />
+      </Stack>
+    </>
   );
 }
 
