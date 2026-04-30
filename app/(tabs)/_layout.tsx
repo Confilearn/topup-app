@@ -50,7 +50,7 @@ function ClassicTabLayout() {
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
 
-  const TAB_HEIGHT = 60;
+  const TAB_HEIGHT = 62;
   const BOTTOM_INSET = isWeb ? 34 : insets.bottom;
 
   const TABS = [
@@ -116,7 +116,8 @@ function ClassicTabLayout() {
           </>
         ),
         tabBarItemStyle: {
-          paddingVertical: 6,
+          paddingVertical: 4,
+          paddingHorizontal: 2,
         },
         tabBarLabel: () => null,
       }}
@@ -167,13 +168,12 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   tabBarBg: {
-    // borderTopLeftRadius: 20,
-    // borderTopRightRadius: 20,
     overflow: "hidden",
   },
   tabItem: {
     alignItems: "center",
-    gap: 4,
+    gap: 2,
+    flex: 1,
   },
   tabIconWrap: {
     width: 40,
@@ -185,5 +185,7 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 10,
     fontFamily: "Nunito_500Medium",
+    textAlign: "center",
+    lineHeight: 10,
   },
 });
