@@ -8,10 +8,10 @@ import {
   Alert,
   Share,
   Platform,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+ Clipboard } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Clipboard } from "react-native";
+
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useTheme";
@@ -114,23 +114,16 @@ export default function TransactionDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { transactions, isLoading } = useTransactionStore();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
 
   // Find transaction from existing list (same pattern as web client)
   const transaction = transactions
     ? transactions.find((tx) => tx._id === id)
     : null;
 
-  const topPadding = insets.top + (Platform.OS === "web" ? 67 : 0);
-  const bottomPadding = insets.bottom + (Platform.OS === "web" ? 34 : 0);
-
   if (!transaction) {
     return (
-      <View
-        style={[
-          styles.container,
-          { backgroundColor: colors.bgPrimary, paddingTop: topPadding },
-        ]}
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: colors.bgPrimary }]}
       >
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.backBtn}>
@@ -146,7 +139,7 @@ export default function TransactionDetailsScreen() {
             {isLoading ? "Loading..." : "Transaction not found"}
           </Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
@@ -170,15 +163,12 @@ export default function TransactionDetailsScreen() {
   };
 
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: colors.bgPrimary, paddingBottom: bottomPadding },
-      ]}
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.bgPrimary }]}
     >
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scroll, { paddingTop: topPadding }]}
+        contentContainerStyle={styles.scroll}
       >
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.backBtn}>
@@ -528,7 +518,7 @@ export default function TransactionDetailsScreen() {
           </View>
         )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

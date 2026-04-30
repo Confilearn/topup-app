@@ -8,7 +8,7 @@ import {
   Platform,
 } from "react-native";
 import { router } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useTheme";
@@ -32,7 +32,6 @@ export default function SignupScreen() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const { signup } = useAuthStore();
-  const insets = useSafeAreaInsets();
 
   const handleSignup = async () => {
     // Validate required fields
@@ -105,17 +104,12 @@ export default function SignupScreen() {
 
   const update = (key: string, val: string) =>
     setForm((f) => ({ ...f, [key]: val }));
-  const topPad = insets.top + (Platform.OS === "web" ? 67 : 0);
-  const botPad = insets.bottom + (Platform.OS === "web" ? 34 : 0);
-
   return (
-    <View
+    <SafeAreaView
       style={[
         styles.container,
         {
           backgroundColor: colors.bgPrimary,
-          paddingTop: topPad,
-          paddingBottom: botPad,
         },
       ]}
     >
@@ -278,7 +272,7 @@ export default function SignupScreen() {
           </View>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

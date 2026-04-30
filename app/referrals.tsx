@@ -8,7 +8,7 @@ import {
   Platform,
   Share,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useTheme";
@@ -27,7 +27,6 @@ import { ReferralDisabled } from "@/components/ui/ReferralDisabled";
  */
 export default function ReferralsScreen() {
   const colors = useColors();
-  const insets = useSafeAreaInsets();
   const { userProfile } = useUserStore();
   const {
     referralHistory,
@@ -59,9 +58,6 @@ export default function ReferralsScreen() {
       });
     }
   }, [isSettingsDataStale, fetchReferralSettings]);
-
-  const topPadding = insets.top + (Platform.OS === "web" ? 67 : 0);
-  const bottomPadding = insets.bottom + (Platform.OS === "web" ? 34 : 0);
 
   // Format currency with proper Nigerian Naira symbol
   const formatCurrency = (amount: number | undefined | null) => {
@@ -179,15 +175,12 @@ export default function ReferralsScreen() {
   };
 
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: colors.bgPrimary, paddingBottom: bottomPadding },
-      ]}
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.bgPrimary }]}
     >
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scroll, { paddingTop: topPadding }]}
+        contentContainerStyle={styles.scroll}
       >
         <AppHeader />
 
@@ -466,7 +459,7 @@ export default function ReferralsScreen() {
           onClose={() => setResult(null)}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 

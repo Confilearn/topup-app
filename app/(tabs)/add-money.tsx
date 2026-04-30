@@ -8,7 +8,7 @@ import {
   Platform,
   Alert,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -24,7 +24,6 @@ import { CopyModal } from "@/components/ui/CopyModal";
 
 export default function AddMoneyScreen() {
   const colors = useColors();
-  const insets = useSafeAreaInsets();
   const {
     userProfile,
     hasVirtualAccount,
@@ -42,9 +41,6 @@ export default function AddMoneyScreen() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showCopyModal, setShowCopyModal] = useState(false);
   const [copiedText, setCopiedText] = useState("");
-
-  const topPadding = insets.top + (Platform.OS === "web" ? 67 : 0);
-  const bottomPadding = insets.bottom + (Platform.OS === "web" ? 34 : 0);
 
   // Fetch deposit history on component mount
   React.useEffect(() => {
@@ -82,15 +78,12 @@ export default function AddMoneyScreen() {
   };
 
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: colors.bgPrimary, paddingBottom: bottomPadding },
-      ]}
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.bgPrimary }]}
     >
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scroll, { paddingTop: topPadding }]}
+        contentContainerStyle={styles.scroll}
       >
         <AppHeader />
         <Text style={[styles.title, { color: colors.textPrimary }]}>
@@ -447,7 +440,7 @@ export default function AddMoneyScreen() {
         onClose={() => setShowCopyModal(false)}
         copiedText={copiedText}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

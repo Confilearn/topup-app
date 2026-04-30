@@ -9,7 +9,7 @@ import {
   Switch,
 } from "react-native";
 import { router } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
@@ -26,7 +26,6 @@ import { userAPI, authAPI } from "@/lib/api";
 
 export default function SettingsScreen() {
   const colors = useColors();
-  const insets = useSafeAreaInsets();
   const { user, logout, updatePassword, updateProfile } = useAuthStore();
   const { isDark, toggleTheme } = useThemeStore();
   const { userProfile, updateUserProfile, fetchUserProfile } = useUserStore();
@@ -55,9 +54,6 @@ export default function SettingsScreen() {
     message: string;
   } | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-
-  const topPadding = insets.top + (Platform.OS === "web" ? 67 : 0);
-  const bottomPadding = insets.bottom + (Platform.OS === "web" ? 34 : 0);
 
   // Check if user has transaction pin
   useEffect(() => {
@@ -307,15 +303,12 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: colors.bgPrimary, paddingBottom: bottomPadding },
-      ]}
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.bgPrimary }]}
     >
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scroll, { paddingTop: topPadding }]}
+        contentContainerStyle={styles.scroll}
       >
         <AppHeader />
         <Text style={[styles.title, { color: colors.textPrimary }]}>
@@ -890,7 +883,7 @@ export default function SettingsScreen() {
           </View>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 

@@ -9,7 +9,7 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useTheme";
 import { AppHeader } from "@/components/ui/AppHeader";
@@ -27,7 +27,6 @@ const STATUS_FILTERS = ["All", "Completed", "Failed", "Pending"];
  */
 export default function TransactionsScreen() {
   const colors = useColors();
-  const insets = useSafeAreaInsets();
 
   // Transaction store hooks
   const {
@@ -43,9 +42,6 @@ export default function TransactionsScreen() {
   // Local state
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-
-  const topPadding = insets.top + (Platform.OS === "web" ? 67 : 0);
-  const bottomPadding = insets.bottom + (Platform.OS === "web" ? 34 : 0);
 
   // Fetch transactions on component mount
   useEffect(() => {
@@ -96,18 +92,12 @@ export default function TransactionsScreen() {
   };
 
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: colors.bgPrimary, paddingBottom: bottomPadding },
-      ]}
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.bgPrimary }]}
     >
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: topPadding },
-        ]}
+        contentContainerStyle={styles.scrollContent}
       >
         {/* Header */}
         <View style={styles.header}>
@@ -202,7 +192,7 @@ export default function TransactionsScreen() {
           />
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

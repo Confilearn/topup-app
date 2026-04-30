@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { router } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useTheme";
@@ -25,7 +25,6 @@ export default function LoginScreen() {
   const [error, setError] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const { login, isLoading, error: authError, clearError } = useAuthStore();
-  const insets = useSafeAreaInsets();
 
   const handleLogin = async () => {
     // Clear any existing errors
@@ -72,17 +71,12 @@ export default function LoginScreen() {
     }
   };
 
-  const topPad = insets.top + (Platform.OS === "web" ? 67 : 0);
-  const botPad = insets.bottom + (Platform.OS === "web" ? 34 : 0);
-
   return (
-    <View
+    <SafeAreaView
       style={[
         styles.container,
         {
           backgroundColor: colors.bgPrimary,
-          paddingTop: topPad,
-          paddingBottom: botPad,
         },
       ]}
     >
@@ -222,7 +216,7 @@ export default function LoginScreen() {
           </View>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

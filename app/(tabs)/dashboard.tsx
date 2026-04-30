@@ -9,7 +9,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { router } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -75,7 +75,6 @@ export default function DashboardScreen() {
     lastUpdated: vtuLastUpdated,
     clearCacheAndRefetch,
   } = useVtuStore();
-  const insets = useSafeAreaInsets();
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeModal, setActiveModal] = useState<ServiceType>(null);
@@ -164,19 +163,13 @@ export default function DashboardScreen() {
     setRefreshing(false);
   };
 
-  const topPadding = insets.top + (Platform.OS === "web" ? 67 : 0);
-  const bottomPadding = insets.bottom + (Platform.OS === "web" ? 34 : 0);
-
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: colors.bgPrimary, paddingBottom: bottomPadding },
-      ]}
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.bgPrimary }]}
     >
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scroll, { paddingTop: topPadding }]}
+        contentContainerStyle={styles.scroll}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -318,7 +311,7 @@ export default function DashboardScreen() {
         visible={activeModal === "cable"}
         onClose={() => setActiveModal(null)}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

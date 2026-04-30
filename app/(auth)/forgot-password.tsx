@@ -8,7 +8,7 @@ import {
   Platform,
 } from "react-native";
 import { router } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useTheme";
@@ -24,7 +24,6 @@ export default function ForgotPasswordScreen() {
   const [error, setError] = useState("");
   const [showResult, setShowResult] = useState(false);
   const { forgotPassword } = useAuthStore();
-  const insets = useSafeAreaInsets();
 
   const handleForgotPassword = async () => {
     // Clear previous errors
@@ -56,17 +55,12 @@ export default function ForgotPasswordScreen() {
     }
   };
 
-  const topPad = insets.top + (Platform.OS === "web" ? 67 : 0);
-  const botPad = insets.bottom + (Platform.OS === "web" ? 34 : 0);
-
   return (
-    <View
+    <SafeAreaView
       style={[
         styles.container,
         {
           backgroundColor: colors.bgPrimary,
-          paddingTop: topPad,
-          paddingBottom: botPad,
         },
       ]}
     >
@@ -173,7 +167,7 @@ export default function ForgotPasswordScreen() {
           router.back();
         }}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
