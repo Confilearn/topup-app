@@ -169,17 +169,6 @@ export function Drawer({ visible, onClose }: DrawerProps) {
                 ₦{(userProfile?.balance || 0).toFixed(2)}
               </Text>
             </View>
-            {/* Show verification status if available */}
-            {userProfile?.isVerified && (
-              <View style={styles.verifiedPill}>
-                <Ionicons
-                  name="checkmark-circle"
-                  size={12}
-                  color="rgba(34, 197, 94, 0.9)"
-                />
-                <Text style={styles.verifiedPillText}>Verified</Text>
-              </View>
-            )}
           </LinearGradient>
 
           {/* Nav Items */}
@@ -494,21 +483,5 @@ const styles = StyleSheet.create({
   confirmBtnText: {
     fontSize: 15,
     fontFamily: "Nunito_600SemiBold",
-  },
-  verifiedPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginTop: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    backgroundColor: "rgba(34, 197, 94, 0.2)",
-    borderRadius: 12,
-    alignSelf: "flex-start",
-  },
-  verifiedPillText: {
-    fontSize: 11,
-    fontFamily: "Nunito_600SemiBold",
-    color: "rgba(34, 197, 94, 0.9)",
   },
 });
