@@ -176,6 +176,7 @@ export default function ReferralsScreen() {
 
   return (
     <SafeAreaView
+      mode="margin"
       style={[styles.container, { backgroundColor: colors.bgPrimary }]}
     >
       <ScrollView

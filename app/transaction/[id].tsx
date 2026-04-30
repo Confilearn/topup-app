@@ -8,7 +8,8 @@ import {
   Alert,
   Share,
   Platform,
- Clipboard } from "react-native";
+  Clipboard,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
@@ -164,6 +165,7 @@ export default function TransactionDetailsScreen() {
 
   return (
     <SafeAreaView
+      mode="margin"
       style={[styles.container, { backgroundColor: colors.bgPrimary }]}
     >
       <ScrollView

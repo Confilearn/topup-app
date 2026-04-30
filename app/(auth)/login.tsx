@@ -73,6 +73,7 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView
+      mode="margin"
       style={[
         styles.container,
         {

@@ -51,9 +51,7 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <GestureHandlerRootView style={{ flex: 1 }}>
           <KeyboardProvider>
-            <SafeAreaView style={{ flex: 1 }}>
-              <RootLayoutNav />
-            </SafeAreaView>
+            <RootLayoutNav />
           </KeyboardProvider>
         </GestureHandlerRootView>
       </QueryClientProvider>

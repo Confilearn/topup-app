@@ -106,6 +106,7 @@ export default function SignupScreen() {
     setForm((f) => ({ ...f, [key]: val }));
   return (
     <SafeAreaView
+      mode="margin"
       style={[
         styles.container,
         {
