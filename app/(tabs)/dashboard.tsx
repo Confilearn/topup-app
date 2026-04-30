@@ -217,7 +217,7 @@ export default function DashboardScreen() {
           <View style={styles.balanceRow}>
             <Text style={styles.balanceAmount}>
               {balanceVisible
-                ? `₦${(userProfile?.balance || 0).toFixed(2)}`
+                ? `₦${(userProfile?.balance || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`
                 : "₦••••••"}
             </Text>
             <Pressable
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
   },
   balanceAmount: {
     color: "#fff",
-    fontSize: 36,
+    fontSize: 32,
     fontFamily: "Nunito_800ExtraBold",
   },
   eyeBtn: { padding: 4 },
