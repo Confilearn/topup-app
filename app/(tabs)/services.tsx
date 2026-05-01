@@ -18,6 +18,7 @@ import { AirtimeModal } from "@/components/services/AirtimeModal";
 import { DataModal } from "@/components/services/DataModal";
 import { ElectricityModal } from "@/components/services/ElectricityModal";
 import { CableModal } from "@/components/services/CableModal";
+import { UnavailableServiceModal } from "@/components/services/UnavailableServiceModal";
 
 type ServiceType =
   | "airtime"
@@ -82,6 +83,9 @@ const SERVICES = [
 export default function ServicesScreen() {
   const colors = useColors();
   const [activeModal, setActiveModal] = useState<ServiceType>(null);
+  const [unavailableService, setUnavailableService] = useState<string | null>(
+    null,
+  );
   const scrollRef = useRef<ScrollView>(null);
 
   // Auto-scroll to top when screen comes into focus
@@ -163,7 +167,16 @@ export default function ServicesScreen() {
                   title="Select Service"
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                    setActiveModal(svc.id as ServiceType);
+                    // Check if service is unavailable
+                    if (
+                      svc.id === "cable" ||
+                      svc.id === "bills" ||
+                      svc.id === "internet"
+                    ) {
+                      setUnavailableService(svc.title);
+                    } else {
+                      setActiveModal(svc.id as ServiceType);
+                    }
                   }}
                 />
               </View>
@@ -187,6 +200,12 @@ export default function ServicesScreen() {
       <CableModal
         visible={activeModal === "cable"}
         onClose={() => setActiveModal(null)}
+      />
+
+      <UnavailableServiceModal
+        visible={!!unavailableService}
+        onClose={() => setUnavailableService(null)}
+        serviceName={unavailableService || ""}
       />
     </SafeAreaView>
   );

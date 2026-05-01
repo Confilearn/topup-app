@@ -25,6 +25,7 @@ import { AirtimeModal } from "@/components/services/AirtimeModal";
 import { DataModal } from "@/components/services/DataModal";
 import { ElectricityModal } from "@/components/services/ElectricityModal";
 import { CableModal } from "@/components/services/CableModal";
+import { UnavailableServiceModal } from "@/components/services/UnavailableServiceModal";
 import RecentTransactions from "@/components/transactions/RecentTransactions";
 
 type ServiceType =
@@ -99,6 +100,9 @@ export default function DashboardScreen() {
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeModal, setActiveModal] = useState<ServiceType>(null);
+  const [unavailableService, setUnavailableService] = useState<string | null>(
+    null,
+  );
   const scrollRef = useRef<ScrollView>(null);
 
   // Auto-scroll to top when screen comes into focus
@@ -309,7 +313,16 @@ export default function DashboardScreen() {
                   ]}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setActiveModal(s.id as ServiceType);
+                    // Check if service is unavailable
+                    if (
+                      s.id === "cable" ||
+                      s.id === "bills" ||
+                      s.id === "internet"
+                    ) {
+                      setUnavailableService(s.label);
+                    } else {
+                      setActiveModal(s.id as ServiceType);
+                    }
                   }}
                 >
                   <View
@@ -356,6 +369,12 @@ export default function DashboardScreen() {
       <CableModal
         visible={activeModal === "cable"}
         onClose={() => setActiveModal(null)}
+      />
+
+      <UnavailableServiceModal
+        visible={!!unavailableService}
+        onClose={() => setUnavailableService(null)}
+        serviceName={unavailableService || ""}
       />
     </SafeAreaView>
   );
