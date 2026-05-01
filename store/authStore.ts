@@ -4,6 +4,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { authAPI, initializeAuth, TokenStorage } from "@/lib/api";
 import { useUserStore } from "./userStore";
 import { useReferralStore } from "./referralStore";
+import { useTransactionStore } from "./transactionStore";
+import { useDepositStore } from "./depositStore";
 
 // User interface - matches server response structure
 interface User {
@@ -157,9 +159,13 @@ export const useAuthStore = create<AuthState>()(
           // Clear all user-related data from other stores
           const { clearUserProfile } = useUserStore.getState();
           const { clearReferralHistory } = useReferralStore.getState();
+          const { clearTransactions } = useTransactionStore.getState();
+          const { clearDepositHistory } = useDepositStore.getState();
 
           clearUserProfile();
           clearReferralHistory();
+          clearTransactions();
+          clearDepositHistory();
         }
       },
 

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { transactionAPI } from "@/lib/api";
+import { useAuthStore } from "./authStore";
 
 // Transaction interface matching server response
 export interface Transaction {
@@ -99,13 +100,26 @@ export const useTransactionStore = create<TransactionStore>()(
       // Fetch all transactions for the current user
       fetchTransactions: async () => {
         const { currentUserId, lastFetched } = get();
+        const authStore = useAuthStore.getState();
+        const currentAuthUserId = authStore.user?.id;
+
+        // Force refresh if user has changed
+        if (
+          currentUserId &&
+          currentAuthUserId &&
+          currentUserId !== currentAuthUserId
+        ) {
+          console.log("User changed, invalidating transaction cache");
+          set({ lastFetched: null }); // Force refresh
+        }
 
         // Check if we have fresh data (less than 5 minutes old)
         const maxAge = 5 * 60 * 1000; // 5 minutes
         if (
           lastFetched &&
           Date.now() - lastFetched < maxAge &&
-          get().transactions.length > 0
+          get().transactions.length > 0 &&
+          currentUserId === currentAuthUserId // Only use cache if same user
         ) {
           console.log("Using fresh transaction data from cache");
           return;
@@ -128,6 +142,7 @@ export const useTransactionStore = create<TransactionStore>()(
             isLoading: false,
             error: null,
             lastFetched: Date.now(),
+            currentUserId: currentAuthUserId, // Track current user
           });
         } catch (error) {
           console.error("Failed to fetch transactions:", error);
@@ -143,14 +158,27 @@ export const useTransactionStore = create<TransactionStore>()(
 
       // Fetch only recent transactions (for dashboard widgets)
       fetchRecentTransactions: async () => {
-        const { lastFetched } = get();
+        const { lastFetched, currentUserId } = get();
+        const authStore = useAuthStore.getState();
+        const currentAuthUserId = authStore.user?.id;
+
+        // Force refresh if user has changed
+        if (
+          currentUserId &&
+          currentAuthUserId &&
+          currentUserId !== currentAuthUserId
+        ) {
+          console.log("User changed, invalidating recent transactions cache");
+          set({ lastFetched: null }); // Force refresh
+        }
 
         // Check if we have fresh data
         const maxAge = 2 * 60 * 1000; // 2 minutes for recent transactions
         if (
           lastFetched &&
           Date.now() - lastFetched < maxAge &&
-          get().recentTransactions.length > 0
+          get().recentTransactions.length > 0 &&
+          currentUserId === currentAuthUserId // Only use cache if same user
         ) {
           return;
         }
@@ -174,6 +202,7 @@ export const useTransactionStore = create<TransactionStore>()(
             isLoading: false,
             error: null,
             lastFetched: Date.now(),
+            currentUserId: currentAuthUserId, // Track current user
           });
         } catch (error) {
           console.error("Failed to fetch recent transactions:", error);
@@ -219,6 +248,7 @@ export const useTransactionStore = create<TransactionStore>()(
           transactions: [],
           recentTransactions: [],
           lastFetched: null,
+          currentUserId: null,
           error: null,
         });
       },
