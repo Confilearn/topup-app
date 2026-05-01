@@ -19,6 +19,7 @@ import { useColors } from "@/hooks/useTheme";
 import { useTransactionStore, Transaction } from "@/store/transactionStore";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { GradientButton } from "@/components/ui/GradientButton";
+import { CopyModal } from "@/components/ui/CopyModal";
 
 // Helper function to get transaction description
 function getTransactionDescription(transaction: any) {
@@ -75,6 +76,7 @@ function InfoRow({
   borderColor,
   labelColor,
   textColor,
+  onCopy,
 }: {
   label: string;
   value: string;
@@ -83,10 +85,13 @@ function InfoRow({
   borderColor: string;
   labelColor: string;
   textColor: string;
+  onCopy?: (text: string) => void;
 }) {
   const copy = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Alert.alert("Copied!", `${value} copied to clipboard`);
+    if (onCopy) {
+      onCopy(value);
+    }
   };
 
   return (
@@ -115,6 +120,8 @@ export default function TransactionDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { transactions, isLoading } = useTransactionStore();
   const router = useRouter();
+  const [showCopyModal, setShowCopyModal] = useState(false);
+  const [copiedText, setCopiedText] = useState("");
 
   // Find transaction from existing list (same pattern as web client)
   const transaction = transactions
@@ -234,6 +241,10 @@ export default function TransactionDetailsScreen() {
             label="Transaction ID"
             value={transaction._id}
             copyable
+            onCopy={(text) => {
+              setCopiedText(text);
+              setShowCopyModal(true);
+            }}
           />
           <InfoRow
             {...infoProps}
@@ -277,6 +288,10 @@ export default function TransactionDetailsScreen() {
               label="Phone Number"
               value={transaction.details.mobileNumber}
               copyable
+              onCopy={(text) => {
+                setCopiedText(text);
+                setShowCopyModal(true);
+              }}
             />
           )}
           <InfoRow
@@ -284,6 +299,10 @@ export default function TransactionDetailsScreen() {
             label="Reference"
             value={transaction.reference}
             copyable
+            onCopy={(text) => {
+              setCopiedText(text);
+              setShowCopyModal(true);
+            }}
           />
           <View style={[styles.lastInfoRow]}>
             <Text style={[styles.infoLabel, { color: colors.textMuted }]}>
@@ -423,6 +442,10 @@ export default function TransactionDetailsScreen() {
                   label="Phone Number"
                   value={transaction.details.mobileNumber}
                   copyable
+                  onCopy={(text) => {
+                    setCopiedText(text);
+                    setShowCopyModal(true);
+                  }}
                 />
               )}
 
@@ -440,6 +463,10 @@ export default function TransactionDetailsScreen() {
                   label="Meter Number"
                   value={transaction.details.meterNum}
                   copyable
+                  onCopy={(text) => {
+                    setCopiedText(text);
+                    setShowCopyModal(true);
+                  }}
                 />
               )}
 
@@ -449,6 +476,10 @@ export default function TransactionDetailsScreen() {
                   label="Smart Card Number"
                   value={transaction.details.cableNum}
                   copyable
+                  onCopy={(text) => {
+                    setCopiedText(text);
+                    setShowCopyModal(true);
+                  }}
                 />
               )}
 
@@ -516,10 +547,21 @@ export default function TransactionDetailsScreen() {
               label="Reference"
               value={transaction.reference}
               copyable
+              onCopy={(text) => {
+                setCopiedText(text);
+                setShowCopyModal(true);
+              }}
             />
           </View>
         )}
       </ScrollView>
+
+      {/* Copy Modal */}
+      <CopyModal
+        visible={showCopyModal}
+        onClose={() => setShowCopyModal(false)}
+        copiedText={copiedText}
+      />
     </SafeAreaView>
   );
 }

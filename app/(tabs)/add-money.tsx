@@ -21,6 +21,7 @@ import { GradientButton } from "@/components/ui/GradientButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SuccessModal } from "@/components/ui/SuccessModal";
 import { CopyModal } from "@/components/ui/CopyModal";
+import { ResultModal } from "@/components/services/ResultModal";
 
 export default function AddMoneyScreen() {
   const colors = useColors();
@@ -41,6 +42,11 @@ export default function AddMoneyScreen() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showCopyModal, setShowCopyModal] = useState(false);
   const [copiedText, setCopiedText] = useState("");
+  const [errorResult, setErrorResult] = useState<{
+    type: "success" | "error";
+    title: string;
+    message: string;
+  } | null>(null);
 
   // Fetch deposit history on component mount
   React.useEffect(() => {
@@ -65,10 +71,11 @@ export default function AddMoneyScreen() {
       // Show success modal
       setShowSuccessModal(true);
     } catch (error) {
-      Alert.alert(
-        "Error",
-        "Failed to create virtual account. Please try again.",
-      );
+      setErrorResult({
+        type: "error",
+        title: "Account Creation Failed",
+        message: "Failed to create virtual account. Please try again.",
+      });
     }
   };
 
@@ -453,6 +460,17 @@ export default function AddMoneyScreen() {
         onClose={() => setShowCopyModal(false)}
         copiedText={copiedText}
       />
+
+      {/* Error Modal */}
+      {errorResult && (
+        <ResultModal
+          visible={!!errorResult}
+          type={errorResult.type}
+          title={errorResult.title}
+          message={errorResult.message}
+          onClose={() => setErrorResult(null)}
+        />
+      )}
     </SafeAreaView>
   );
 }
