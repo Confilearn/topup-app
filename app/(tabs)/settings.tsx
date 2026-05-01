@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useFocusEffect } from "expo-router";
 import {
   View,
   Text,
@@ -29,6 +30,16 @@ export default function SettingsScreen() {
   const { user, logout, updatePassword, updateProfile } = useAuthStore();
   const { isDark, toggleTheme } = useThemeStore();
   const { userProfile, updateUserProfile, fetchUserProfile } = useUserStore();
+  const scrollRef = useRef<ScrollView>(null);
+
+  // Auto-scroll to top when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({ y: 0, animated: true });
+      }, 100);
+    }, []),
+  );
 
   // Initialize form with fetched user profile data, fallback to auth store
   const [profileForm, setProfileForm] = useState({
@@ -308,6 +319,7 @@ export default function SettingsScreen() {
       style={[styles.container, { backgroundColor: colors.bgPrimary }]}
     >
       <ScrollView
+        ref={scrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
       >

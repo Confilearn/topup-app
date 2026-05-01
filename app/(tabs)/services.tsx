@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
+import { useFocusEffect } from "expo-router";
 import {
   View,
   Text,
@@ -81,6 +82,16 @@ const SERVICES = [
 export default function ServicesScreen() {
   const colors = useColors();
   const [activeModal, setActiveModal] = useState<ServiceType>(null);
+  const scrollRef = useRef<ScrollView>(null);
+
+  // Auto-scroll to top when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({ y: 0, animated: true });
+      }, 100);
+    }, []),
+  );
 
   return (
     <SafeAreaView
@@ -88,6 +99,7 @@ export default function ServicesScreen() {
       style={[styles.container, { backgroundColor: colors.bgPrimary }]}
     >
       <ScrollView
+        ref={scrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
       >

@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { useFocusEffect } from "expo-router";
 import {
   View,
   Text,
@@ -42,6 +43,16 @@ export default function TransactionsScreen() {
   // Local state
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const scrollRef = useRef<ScrollView>(null);
+
+  // Auto-scroll to top when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({ y: 0, animated: true });
+      }, 100);
+    }, []),
+  );
 
   // Fetch transactions on component mount
   useEffect(() => {
@@ -97,6 +108,7 @@ export default function TransactionsScreen() {
       style={[styles.container, { backgroundColor: colors.bgPrimary }]}
     >
       <ScrollView
+        ref={scrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >

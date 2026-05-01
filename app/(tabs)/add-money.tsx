@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
+import { useFocusEffect } from "expo-router";
 import {
   View,
   Text,
@@ -47,6 +48,16 @@ export default function AddMoneyScreen() {
     title: string;
     message: string;
   } | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
+
+  // Auto-scroll to top when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({ y: 0, animated: true });
+      }, 100);
+    }, []),
+  );
 
   // Fetch deposit history on component mount
   React.useEffect(() => {
@@ -90,6 +101,7 @@ export default function AddMoneyScreen() {
       style={[styles.container, { backgroundColor: colors.bgPrimary }]}
     >
       <ScrollView
+        ref={scrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
       >

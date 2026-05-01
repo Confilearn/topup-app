@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useFocusEffect } from "expo-router";
 import {
   View,
   Text,
@@ -98,6 +99,16 @@ export default function DashboardScreen() {
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeModal, setActiveModal] = useState<ServiceType>(null);
+  const scrollRef = useRef<ScrollView>(null);
+
+  // Auto-scroll to top when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({ y: 0, animated: true });
+      }, 100);
+    }, []),
+  );
 
   // Fetch user profile on component mount and when user changes
   useEffect(() => {
@@ -189,6 +200,7 @@ export default function DashboardScreen() {
       style={[styles.container, { backgroundColor: colors.bgPrimary }]}
     >
       <ScrollView
+        ref={scrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
         refreshControl={
