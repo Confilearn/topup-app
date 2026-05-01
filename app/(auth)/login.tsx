@@ -7,6 +7,7 @@ import {
   Pressable,
   Platform,
   TouchableOpacity,
+  KeyboardAvoidingView,
 } from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -88,141 +89,155 @@ export default function LoginScreen() {
         />
       )}
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scroll}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardContainer}
       >
-        <View style={styles.topBar}>
-          <Pressable
-            onPress={() => router.push("/(auth)/signup")}
-            style={styles.iconBtn}
-          >
-            <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
-          </Pressable>
-          <Text style={[styles.brand, { color: colors.purple }]}>
-            TopupAfrica
-          </Text>
-          <View style={styles.iconBtn}>
-            <Ionicons name="sunny" size={22} color={colors.warning} />
-          </View>
-        </View>
-
-        <View
-          style={[
-            styles.card,
-            { backgroundColor: colors.bgCard, borderColor: colors.border },
-          ]}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scroll}
         >
-          <Text style={[styles.title, { color: colors.textPrimary }]}>
-            Welcome Back
-          </Text>
-          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-            Sign in to your account to continue
-          </Text>
+          <View style={styles.topBar}>
+            <Pressable
+              onPress={() => router.push("/(auth)/signup")}
+              style={styles.iconBtn}
+            >
+              <Ionicons
+                name="arrow-back"
+                size={22}
+                color={colors.textPrimary}
+              />
+            </Pressable>
+            <Text style={[styles.brand, { color: colors.purple }]}>
+              TopupAfrica
+            </Text>
+            <View style={styles.iconBtn}>
+              <Ionicons name="sunny" size={22} color={colors.warning} />
+            </View>
+          </View>
 
-          <View style={styles.form}>
-            {/* Show auth store errors or local errors */}
-            {authError || error ? (
-              <View
-                style={[
-                  styles.errorBanner,
-                  {
-                    backgroundColor: `${colors.error}20`,
-                    borderColor: `${colors.error}40`,
-                  },
-                ]}
-              >
-                <Ionicons name="alert-circle" size={16} color={colors.error} />
-                <Text style={[styles.errorText, { color: colors.error }]}>
-                  {authError || error}
-                </Text>
-              </View>
-            ) : null}
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.bgCard, borderColor: colors.border },
+            ]}
+          >
+            <Text style={[styles.title, { color: colors.textPrimary }]}>
+              Welcome Back
+            </Text>
+            <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+              Sign in to your account to continue
+            </Text>
 
-            <Input
-              label="Email"
-              placeholder="john@example.com"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            <Input
-              label="Password"
-              placeholder="Enter your password"
-              value={password}
-              onChangeText={setPassword}
-              isPassword
-            />
-
-            {/* Remember Me & Forgot Password */}
-            <View style={styles.formActions}>
-              <TouchableOpacity
-                style={styles.rememberMeContainer}
-                onPress={() => setRememberMe(!rememberMe)}
-              >
+            <View style={styles.form}>
+              {/* Show auth store errors or local errors */}
+              {authError || error ? (
                 <View
                   style={[
-                    styles.checkbox,
+                    styles.errorBanner,
                     {
-                      borderColor: colors.border,
-                      backgroundColor: rememberMe
-                        ? colors.purple
-                        : "transparent",
+                      backgroundColor: `${colors.error}20`,
+                      borderColor: `${colors.error}40`,
                     },
                   ]}
                 >
-                  {rememberMe && (
-                    <Ionicons name="checkmark" size={12} color="white" />
-                  )}
+                  <Ionicons
+                    name="alert-circle"
+                    size={16}
+                    color={colors.error}
+                  />
+                  <Text style={[styles.errorText, { color: colors.error }]}>
+                    {authError || error}
+                  </Text>
                 </View>
-                <Text
-                  style={[styles.rememberMeText, { color: colors.textMuted }]}
-                >
-                  Remember me
-                </Text>
-              </TouchableOpacity>
+              ) : null}
 
-              <Pressable
-                onPress={() => router.push("/(auth)/forgot-password")}
-                style={styles.forgotBtn}
-              >
-                <Text
-                  style={[styles.forgotText, { color: colors.purpleLight }]}
-                >
-                  Forgot password?
-                </Text>
-              </Pressable>
-            </View>
+              <Input
+                label="Email"
+                placeholder="john@example.com"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              <Input
+                label="Password"
+                placeholder="Enter your password"
+                value={password}
+                onChangeText={setPassword}
+                isPassword
+              />
 
-            <GradientButton
-              title="Sign In"
-              onPress={handleLogin}
-              loading={loading || isLoading}
-              disabled={loading || isLoading}
-            />
-
-            <View style={styles.footer}>
-              <Text style={[styles.footerText, { color: colors.textMuted }]}>
-                Don't have an account?{" "}
-              </Text>
-              <Pressable onPress={() => router.push("/(auth)/signup")}>
-                <Text
-                  style={[styles.footerLink, { color: colors.purpleLight }]}
+              {/* Remember Me & Forgot Password */}
+              <View style={styles.formActions}>
+                <TouchableOpacity
+                  style={styles.rememberMeContainer}
+                  onPress={() => setRememberMe(!rememberMe)}
                 >
-                  Sign up
+                  <View
+                    style={[
+                      styles.checkbox,
+                      {
+                        borderColor: colors.border,
+                        backgroundColor: rememberMe
+                          ? colors.purple
+                          : "transparent",
+                      },
+                    ]}
+                  >
+                    {rememberMe && (
+                      <Ionicons name="checkmark" size={12} color="white" />
+                    )}
+                  </View>
+                  <Text
+                    style={[styles.rememberMeText, { color: colors.textMuted }]}
+                  >
+                    Remember me
+                  </Text>
+                </TouchableOpacity>
+
+                <Pressable
+                  onPress={() => router.push("/(auth)/forgot-password")}
+                  style={styles.forgotBtn}
+                >
+                  <Text
+                    style={[styles.forgotText, { color: colors.purpleLight }]}
+                  >
+                    Forgot password?
+                  </Text>
+                </Pressable>
+              </View>
+
+              <GradientButton
+                title="Sign In"
+                onPress={handleLogin}
+                loading={loading || isLoading}
+                disabled={loading || isLoading}
+              />
+
+              <View style={styles.footer}>
+                <Text style={[styles.footerText, { color: colors.textMuted }]}>
+                  Don't have an account?{" "}
                 </Text>
-              </Pressable>
+                <Pressable onPress={() => router.push("/(auth)/signup")}>
+                  <Text
+                    style={[styles.footerLink, { color: colors.purpleLight }]}
+                  >
+                    Sign up
+                  </Text>
+                </Pressable>
+              </View>
             </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  keyboardContainer: { flex: 1 },
   scroll: { flexGrow: 1, padding: 20 },
   topBar: {
     flexDirection: "row",

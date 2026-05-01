@@ -6,6 +6,7 @@ import {
   ScrollView,
   Pressable,
   Platform,
+  KeyboardAvoidingView,
 } from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -121,164 +122,178 @@ export default function SignupScreen() {
         />
       )}
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scroll}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardContainer}
       >
-        <View style={styles.topBar}>
-          <Pressable onPress={() => router.back()} style={styles.iconBtn}>
-            <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
-          </Pressable>
-          <Text style={[styles.brand, { color: colors.purple }]}>
-            TopupAfrica
-          </Text>
-          <View style={{ width: 36 }} />
-        </View>
-
-        <View
-          style={[
-            styles.card,
-            { backgroundColor: colors.bgCard, borderColor: colors.border },
-          ]}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scroll}
         >
-          <Text style={[styles.title, { color: colors.textPrimary }]}>
-            Create Account
-          </Text>
-          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-            Join thousands of users and start using our VTU services today
-          </Text>
+          <View style={styles.topBar}>
+            <Pressable onPress={() => router.back()} style={styles.iconBtn}>
+              <Ionicons
+                name="arrow-back"
+                size={22}
+                color={colors.textPrimary}
+              />
+            </Pressable>
+            <Text style={[styles.brand, { color: colors.purple }]}>
+              TopupAfrica
+            </Text>
+            <View style={{ width: 36 }} />
+          </View>
 
-          <View style={styles.form}>
-            {/* Success Message */}
-            {success ? (
-              <View
-                style={[
-                  styles.successBanner,
-                  {
-                    backgroundColor: `${colors.success}20`,
-                    borderColor: `${colors.success}40`,
-                  },
-                ]}
-              >
-                <Ionicons
-                  name="checkmark-circle"
-                  size={16}
-                  color={colors.success}
-                />
-                <Text style={[styles.successText, { color: colors.success }]}>
-                  Account created successfully! Redirecting to login...
-                </Text>
-              </View>
-            ) : null}
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.bgCard, borderColor: colors.border },
+            ]}
+          >
+            <Text style={[styles.title, { color: colors.textPrimary }]}>
+              Create Account
+            </Text>
+            <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+              Join thousands of users and start using our VTU services today
+            </Text>
 
-            {/* Error Message */}
-            {error && !success ? (
-              <View
-                style={[
-                  styles.errorBanner,
-                  {
-                    backgroundColor: `${colors.error}20`,
-                    borderColor: `${colors.error}40`,
-                  },
-                ]}
-              >
-                <Ionicons name="alert-circle" size={16} color={colors.error} />
-                <Text style={[styles.errorText, { color: colors.error }]}>
-                  {error}
-                </Text>
-              </View>
-            ) : null}
-
-            <View style={styles.row}>
-              <View style={{ flex: 1 }}>
-                <Input
-                  label="First Name"
-                  placeholder="John"
-                  value={form.firstName}
-                  onChangeText={(v) => update("firstName", v)}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Input
-                  label="Last Name"
-                  placeholder="Doe"
-                  value={form.lastName}
-                  onChangeText={(v) => update("lastName", v)}
-                />
-              </View>
-            </View>
-            <Input
-              label="Username"
-              placeholder="johndoe"
-              value={form.username}
-              onChangeText={(v) => update("username", v)}
-              autoCapitalize="none"
-            />
-            <Input
-              label="Email"
-              placeholder="john@example.com"
-              value={form.email}
-              onChangeText={(v) => update("email", v)}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            <Input
-              label="Phone Number"
-              placeholder="+234 123 456 7890"
-              value={form.phone}
-              onChangeText={(v) => update("phone", v)}
-              keyboardType="phone-pad"
-            />
-            <Input
-              label="Password"
-              placeholder="Create a strong password"
-              value={form.password}
-              onChangeText={(v) => update("password", v)}
-              isPassword
-            />
-            <Input
-              label="Confirm Password"
-              placeholder="Confirm your password"
-              value={form.confirmPassword}
-              onChangeText={(v) => update("confirmPassword", v)}
-              isPassword
-            />
-            <Input
-              label="Referral Code (Optional)"
-              placeholder="Enter referral code"
-              value={form.referralCode}
-              onChangeText={(v) => update("referralCode", v)}
-              autoCapitalize="characters"
-            />
-
-            <GradientButton
-              title="Create Account"
-              onPress={handleSignup}
-              loading={loading}
-              disabled={loading || success}
-            />
-
-            <View style={styles.footer}>
-              <Text style={[styles.footerText, { color: colors.textMuted }]}>
-                Already have an account?{" "}
-              </Text>
-              <Pressable onPress={() => router.back()}>
-                <Text
-                  style={[styles.footerLink, { color: colors.purpleLight }]}
+            <View style={styles.form}>
+              {/* Success Message */}
+              {success ? (
+                <View
+                  style={[
+                    styles.successBanner,
+                    {
+                      backgroundColor: `${colors.success}20`,
+                      borderColor: `${colors.success}40`,
+                    },
+                  ]}
                 >
-                  Sign in
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={16}
+                    color={colors.success}
+                  />
+                  <Text style={[styles.successText, { color: colors.success }]}>
+                    Account created successfully! Redirecting to login...
+                  </Text>
+                </View>
+              ) : null}
+
+              {/* Error Message */}
+              {error && !success ? (
+                <View
+                  style={[
+                    styles.errorBanner,
+                    {
+                      backgroundColor: `${colors.error}20`,
+                      borderColor: `${colors.error}40`,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="alert-circle"
+                    size={16}
+                    color={colors.error}
+                  />
+                  <Text style={[styles.errorText, { color: colors.error }]}>
+                    {error}
+                  </Text>
+                </View>
+              ) : null}
+
+              <View style={styles.row}>
+                <View style={{ flex: 1 }}>
+                  <Input
+                    label="First Name"
+                    placeholder="John"
+                    value={form.firstName}
+                    onChangeText={(v) => update("firstName", v)}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Input
+                    label="Last Name"
+                    placeholder="Doe"
+                    value={form.lastName}
+                    onChangeText={(v) => update("lastName", v)}
+                  />
+                </View>
+              </View>
+              <Input
+                label="Username"
+                placeholder="johndoe"
+                value={form.username}
+                onChangeText={(v) => update("username", v)}
+                autoCapitalize="none"
+              />
+              <Input
+                label="Email"
+                placeholder="john@example.com"
+                value={form.email}
+                onChangeText={(v) => update("email", v)}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              <Input
+                label="Phone Number"
+                placeholder="+234 123 456 7890"
+                value={form.phone}
+                onChangeText={(v) => update("phone", v)}
+                keyboardType="phone-pad"
+              />
+              <Input
+                label="Password"
+                placeholder="Create a strong password"
+                value={form.password}
+                onChangeText={(v) => update("password", v)}
+                isPassword
+              />
+              <Input
+                label="Confirm Password"
+                placeholder="Confirm your password"
+                value={form.confirmPassword}
+                onChangeText={(v) => update("confirmPassword", v)}
+                isPassword
+              />
+              <Input
+                label="Referral Code (Optional)"
+                placeholder="Enter referral code"
+                value={form.referralCode}
+                onChangeText={(v) => update("referralCode", v)}
+                autoCapitalize="characters"
+              />
+
+              <GradientButton
+                title="Create Account"
+                onPress={handleSignup}
+                loading={loading}
+                disabled={loading || success}
+              />
+
+              <View style={styles.footer}>
+                <Text style={[styles.footerText, { color: colors.textMuted }]}>
+                  Already have an account?{" "}
                 </Text>
-              </Pressable>
+                <Pressable onPress={() => router.back()}>
+                  <Text
+                    style={[styles.footerLink, { color: colors.purpleLight }]}
+                  >
+                    Sign in
+                  </Text>
+                </Pressable>
+              </View>
             </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  keyboardContainer: { flex: 1 },
   scroll: { flexGrow: 1, padding: 20, paddingBottom: 40 },
   topBar: {
     flexDirection: "row",
