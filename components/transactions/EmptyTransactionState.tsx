@@ -1,10 +1,10 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useColors } from '@/hooks/useTheme';
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useColors } from "@/hooks/useTheme";
 
 interface EmptyTransactionStateProps {
-  type?: 'all' | 'recent' | 'filtered';
+  type?: "all" | "recent" | "filtered";
   message?: string;
   icon?: keyof typeof Ionicons.glyphMap;
 }
@@ -14,35 +14,35 @@ interface EmptyTransactionStateProps {
  * Follows clean coding practices with comprehensive commenting
  */
 export const EmptyTransactionState: React.FC<EmptyTransactionStateProps> = ({
-  type = 'all',
+  type = "all",
   message,
-  icon = 'receipt-outline',
+  icon = "receipt-outline",
 }) => {
   const colors = useColors();
 
   // Get appropriate message based on type
   const getDefaultMessage = () => {
     switch (type) {
-      case 'recent':
-        return 'No recent transactions';
-      case 'filtered':
-        return 'No transactions found';
-      case 'all':
+      case "recent":
+        return "No recent transactions";
+      case "filtered":
+        return "No transactions found";
+      case "all":
       default:
-        return 'No transactions yet';
+        return "No transactions yet";
     }
   };
 
   // Get appropriate subtitle based on type
   const getDefaultSubtitle = () => {
     switch (type) {
-      case 'recent':
-        return 'Your recent transactions will appear here';
-      case 'filtered':
-        return 'Try adjusting your search or filter criteria';
-      case 'all':
+      case "recent":
+        return "Your recent transactions will appear here";
+      case "filtered":
+        return "Try adjusting your search or filter criteria";
+      case "all":
       default:
-        return 'Start making transactions to see your history here';
+        return "Start making transactions to see your history here";
     }
   };
 
@@ -52,12 +52,13 @@ export const EmptyTransactionState: React.FC<EmptyTransactionStateProps> = ({
   return (
     <View style={styles.container}>
       {/* Empty State Icon */}
-      <View style={[styles.iconContainer, { backgroundColor: `${colors.textMuted}15` }]}>
-        <Ionicons 
-          name={icon} 
-          size={48} 
-          color={colors.textMuted} 
-        />
+      <View
+        style={[
+          styles.iconContainer,
+          { backgroundColor: `${colors.textMuted}15` },
+        ]}
+      >
+        <Ionicons name={icon} size={48} color={colors.textMuted} />
       </View>
 
       {/* Empty State Message */}
@@ -69,20 +70,6 @@ export const EmptyTransactionState: React.FC<EmptyTransactionStateProps> = ({
       <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
         {displaySubtitle}
       </Text>
-
-      {/* Additional hint for 'all' type */}
-      {type === 'all' && (
-        <View style={styles.hintContainer}>
-          <Ionicons 
-            name="information-circle-outline" 
-            size={16} 
-            color={colors.blue} 
-          />
-          <Text style={[styles.hintText, { color: colors.blue }]}>
-            Fund your wallet or purchase services to get started
-          </Text>
-        </View>
-      )}
     </View>
   );
 };
@@ -90,8 +77,8 @@ export const EmptyTransactionState: React.FC<EmptyTransactionStateProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingVertical: 60,
     paddingHorizontal: 20,
   },
@@ -99,38 +86,22 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 20,
   },
   title: {
     fontSize: 18,
-    fontFamily: 'Nunito_600SemiBold',
-    textAlign: 'center',
+    fontFamily: "Nunito_600SemiBold",
+    textAlign: "center",
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
-    fontFamily: 'Nunito_400Regular',
-    textAlign: 'center',
+    fontFamily: "Nunito_400Regular",
+    textAlign: "center",
     lineHeight: 20,
     marginBottom: 16,
-  },
-  hintContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    gap: 8,
-  },
-  hintText: {
-    fontSize: 13,
-    fontFamily: 'Nunito_500Medium',
-    textAlign: 'center',
-    flex: 1,
-    lineHeight: 18,
   },
 });
 

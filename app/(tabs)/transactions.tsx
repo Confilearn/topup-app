@@ -139,7 +139,11 @@ export default function TransactionsScreen() {
         </View>
 
         {/* Status Filters */}
-        <View style={styles.filterRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterScrollContent}
+        >
           {STATUS_FILTERS.map((filter) => (
             <Pressable
               key={filter}
@@ -171,7 +175,7 @@ export default function TransactionsScreen() {
               </Text>
             </Pressable>
           ))}
-        </View>
+        </ScrollView>
 
         {/* Transaction Count */}
         <Text style={[styles.count, { color: colors.textMuted }]}>
@@ -219,8 +223,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     borderWidth: 1,
     marginBottom: 16,
   },
@@ -232,6 +236,12 @@ const styles = StyleSheet.create({
   filterRow: {
     flexDirection: "row",
     gap: 8,
+    marginBottom: 12,
+  },
+  filterScrollContent: {
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 20,
     marginBottom: 12,
   },
   filterBtn: {
