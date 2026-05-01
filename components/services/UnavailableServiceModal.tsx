@@ -36,83 +36,57 @@ export function UnavailableServiceModal({
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="fade"
       onRequestClose={handleClose}
     >
-      <View style={styles.overlay}>
-        <View style={[styles.container, { backgroundColor: colors.bgCard }]}>
-          {/* Gradient Header */}
-          <LinearGradient
-            colors={["#FF6B6B", "#FF8E53"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.header}
+      <Pressable style={styles.overlay} onPress={handleClose}>
+        <Pressable
+          style={[styles.centerContainer, { backgroundColor: colors.bgCard }]}
+          onPress={(e) => e.stopPropagation()}
+        >
+          {/* Icon */}
+          <View
+            style={[
+              styles.iconContainer,
+              { backgroundColor: `${colors.purple}20` },
+            ]}
           >
-            <View style={styles.iconContainer}>
-              <Ionicons name="time-outline" size={48} color="white" />
-            </View>
-            <Text style={styles.serviceName}>{serviceName}</Text>
-          </LinearGradient>
+            <Ionicons name="time-outline" size={48} color={colors.purple} />
+          </View>
 
           {/* Content */}
           <View style={styles.content}>
-            <View style={[styles.messageBox, { backgroundColor: colors.bgSecondary }]}>
-              <Ionicons
-                name="information-circle-outline"
-                size={24}
-                color={colors.textMuted}
-                style={styles.infoIcon}
-              />
-              <Text style={[styles.message, { color: colors.textPrimary }]}>
-                Service Currently Unavailable
-              </Text>
-              <Text style={[styles.subMessage, { color: colors.textMuted }]}>
-                We're working hard to bring {serviceName.toLowerCase()} services to you. 
-                This feature will be available soon!
-              </Text>
-            </View>
+            <Text
+              style={[
+                styles.title,
+                {
+                  color: colors.textPrimary,
+                  fontFamily: "Nunito_800ExtraBold",
+                },
+              ]}
+            >
+              {serviceName}
+            </Text>
 
-            <View style={styles.features}>
-              <Text style={[styles.featuresTitle, { color: colors.textPrimary }]}>
-                What to expect:
-              </Text>
-              <View style={styles.featureItem}>
-                <Ionicons
-                  name="checkmark-circle"
-                  size={20}
-                  color={colors.success}
-                  style={styles.featureIcon}
-                />
-                <Text style={[styles.featureText, { color: colors.textSecondary }]}>
-                  Easy and secure payments
-                </Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons
-                  name="checkmark-circle"
-                  size={20}
-                  color={colors.success}
-                  style={styles.featureIcon}
-                />
-                <Text style={[styles.featureText, { color: colors.textSecondary }]}>
-                  Instant service delivery
-                </Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons
-                  name="checkmark-circle"
-                  size={20}
-                  color={colors.success}
-                  style={styles.featureIcon}
-                />
-                <Text style={[styles.featureText, { color: colors.textSecondary }]}>
-                  24/7 customer support
-                </Text>
-              </View>
-            </View>
+            <Text
+              style={[
+                styles.subtitle,
+                { color: colors.textMuted, fontFamily: "Nunito_400Regular" },
+              ]}
+            >
+              Service currently unavailable
+            </Text>
 
-            <Text style={[styles.updateText, { color: colors.textMuted }]}>
-              Stay tuned for updates! We'll notify you when this service is live.
+            <Text
+              style={[
+                styles.message,
+                {
+                  color: colors.textSecondary,
+                  fontFamily: "Nunito_400Regular",
+                },
+              ]}
+            >
+              We're working hard to bring this service to you soon!
             </Text>
           </View>
 
@@ -128,10 +102,17 @@ export function UnavailableServiceModal({
             ]}
             onPress={handleClose}
           >
-            <Text style={styles.closeButtonText}>Got it</Text>
+            <Text
+              style={[
+                styles.closeButtonText,
+                { fontFamily: "Nunito_600SemiBold" },
+              ]}
+            >
+              Got it
+            </Text>
           </Pressable>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }
@@ -140,92 +121,60 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  container: {
-    maxHeight: SCREEN_HEIGHT * 0.75,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-  },
-  header: {
+  centerContainer: {
+    width: "85%",
+    maxWidth: 320,
+    borderRadius: 20,
     padding: 32,
     alignItems: "center",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    gap: 20,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
   },
   iconContainer: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 16,
-  },
-  serviceName: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "white",
-    textAlign: "center",
   },
   content: {
-    padding: 24,
-    gap: 20,
-  },
-  messageBox: {
-    padding: 20,
-    borderRadius: 16,
     alignItems: "center",
     gap: 8,
   },
-  infoIcon: {
-    marginBottom: 4,
-  },
-  message: {
-    fontSize: 18,
-    fontWeight: "600",
+  title: {
+    fontSize: 24,
     textAlign: "center",
   },
-  subMessage: {
+  subtitle: {
+    fontSize: 16,
+    textAlign: "center",
+    marginTop: 4,
+  },
+  message: {
     fontSize: 14,
     textAlign: "center",
     lineHeight: 20,
-  },
-  features: {
-    gap: 12,
-  },
-  featuresTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  featureItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  featureIcon: {
-    flexShrink: 0,
-  },
-  featureText: {
-    fontSize: 14,
-    flex: 1,
-  },
-  updateText: {
-    fontSize: 13,
-    textAlign: "center",
-    fontStyle: "italic",
     marginTop: 8,
   },
   closeButton: {
-    margin: 24,
-    paddingVertical: 16,
+    width: "100%",
+    paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",
+    marginTop: 8,
   },
   closeButtonText: {
     color: "white",
     fontSize: 16,
-    fontWeight: "600",
   },
 });
