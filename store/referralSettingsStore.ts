@@ -72,13 +72,14 @@ export const useReferralSettingsStore = create<ReferralSettingsStore>()(
 
         try {
           const response = await publicAPI.getReferralSettings();
-          
+
           // Store settings locally
           const settings: ReferralSettings = {
             referralAmount: response.data.referralAmount || 300,
             userBonus: response.data.userBonus || 200,
             referralEnabled: response.data.referralEnabled !== false, // Default to true
-            disabledMessage: response.data.disabledMessage || 
+            disabledMessage:
+              response.data.disabledMessage ||
               "Referral features are currently disabled. Please check back later.",
             updatedBy: response.data.updatedBy,
             createdAt: response.data.createdAt,
@@ -95,9 +96,10 @@ export const useReferralSettingsStore = create<ReferralSettingsStore>()(
           console.error("Failed to fetch referral settings:", error);
           set({
             isLoading: false,
-            error: error instanceof Error
-              ? error.message
-              : "Failed to fetch referral settings",
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to fetch referral settings",
           });
         }
       },
@@ -112,7 +114,7 @@ export const useReferralSettingsStore = create<ReferralSettingsStore>()(
       },
 
       // Check if stored data is stale (older than specified minutes)
-      isDataStale: (maxAgeMinutes = 60) => {
+      isDataStale: (maxAgeMinutes = 30) => {
         const { lastFetched } = get();
         if (!lastFetched) return true;
 
@@ -129,8 +131,10 @@ export const useReferralSettingsStore = create<ReferralSettingsStore>()(
       // Get disabled message
       getDisabledMessage: () => {
         const { settings } = get();
-        return settings?.disabledMessage || 
-          "Referral features are currently disabled. Please check back later.";
+        return (
+          settings?.disabledMessage ||
+          "Referral features are currently disabled. Please check back later."
+        );
       },
     }),
     {
