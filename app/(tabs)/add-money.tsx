@@ -131,8 +131,12 @@ export default function AddMoneyScreen() {
               <View style={styles.vaHeader}>
                 <View>
                   <Text style={styles.vaSmall}>Virtual Account</Text>
-                  <Text style={styles.vaBank}>
-                    {userProfile?.virtualAccount?.bankName || "TOPUPAFRICA"}
+                  <Text
+                    style={styles.vaBank}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit={true}
+                  >
+                    TopupAfrica
                   </Text>
                 </View>
                 <Ionicons name="card" size={28} color="rgba(255,255,255,0.8)" />
@@ -141,7 +145,11 @@ export default function AddMoneyScreen() {
               <View style={styles.vaRow}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.vaSmall}>Account Number</Text>
-                  <Text style={styles.vaNumber}>
+                  <Text
+                    style={styles.vaNumber}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit={true}
+                  >
                     {userProfile?.virtualAccount?.accountNumber}
                   </Text>
                 </View>
@@ -170,7 +178,11 @@ export default function AddMoneyScreen() {
 
               <View>
                 <Text style={styles.vaSmall}>Account Name</Text>
-                <Text style={styles.vaValue}>
+                <Text
+                  style={styles.vaValue}
+                  numberOfLines={2}
+                  adjustsFontSizeToFit={true}
+                >
                   {userProfile?.virtualAccount?.accountName}
                 </Text>
               </View>
@@ -473,16 +485,30 @@ const styles = StyleSheet.create({
     fontFamily: "Nunito_400Regular",
     marginBottom: 4,
   },
-  vaBank: { color: "#fff", fontSize: 20, fontFamily: "Nunito_800ExtraBold" },
+  vaBank: {
+    color: "#fff",
+    fontSize: 20,
+    fontFamily: "Nunito_800ExtraBold",
+    flex: 1,
+    minWidth: 0,
+  },
   vaRow: { flexDirection: "row", alignItems: "center" },
   vaNumber: {
     color: "#fff",
     fontSize: 22,
     fontFamily: "Nunito_700Bold",
     letterSpacing: 1,
+    flex: 1,
+    minWidth: 0,
   },
   copyBtn: { padding: 8 },
-  vaValue: { color: "#fff", fontSize: 16, fontFamily: "Nunito_600SemiBold" },
+  vaValue: {
+    color: "#fff",
+    fontSize: 16,
+    fontFamily: "Nunito_600SemiBold",
+    flex: 1,
+    minWidth: 0,
+  },
   howCard: {
     borderRadius: 18,
     padding: 20,
