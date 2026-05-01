@@ -64,7 +64,15 @@ export default function ReferralsScreen() {
     if (amount === undefined || amount === null || isNaN(amount)) {
       return "₦0";
     }
-    return `₦${amount.toLocaleString()}`;
+
+    // Smart formatting for large amounts
+    if (amount >= 1000000) {
+      return `₦${(amount / 1000000).toFixed(1)}M`;
+    } else if (amount >= 1000) {
+      return `₦${(amount / 1000).toFixed(1)}K`;
+    } else {
+      return `₦${amount.toLocaleString()}`;
+    }
   };
 
   // Generate referral link from user's referral code
@@ -226,6 +234,8 @@ export default function ReferralsScreen() {
                   </View>
                   <Text
                     style={[styles.statValue, { color: colors.textPrimary }]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit={true}
                   >
                     {s.value}
                   </Text>
@@ -481,20 +491,23 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 8,
     borderWidth: 1,
+    minHeight: 100,
   },
   statIcon: {
     width: 40,
-    height: 40,
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
   },
-  statValue: { fontSize: 20, fontFamily: "Nunito_800ExtraBold" },
+  statValue: {
+    fontSize: 20,
+    fontFamily: "Nunito_800ExtraBold",
+  },
   statLabel: { fontSize: 12, fontFamily: "Nunito_400Regular" },
   linkCard: {
     borderRadius: 18,
     padding: 20,
-    gap: 14,
+    // ... (rest of the styles remain the same)
     borderWidth: 1,
     marginBottom: 24,
   },
