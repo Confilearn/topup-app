@@ -13,12 +13,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useTheme";
+import { useThemeStore } from "@/store/themeStore";
 import { Input } from "@/components/ui/Input";
 import { GradientButton } from "@/components/ui/GradientButton";
 import { useAuthStore } from "@/store/authStore";
 
 export default function SignupScreen() {
   const colors = useColors();
+  const { isDark, toggleTheme } = useThemeStore();
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -141,7 +143,13 @@ export default function SignupScreen() {
             <Text style={[styles.brand, { color: colors.purple }]}>
               TopupAfrica
             </Text>
-            <View style={{ width: 36 }} />
+            <Pressable onPress={toggleTheme} style={styles.iconBtn}>
+              <Ionicons
+                name={isDark ? "sunny" : "moon"}
+                size={22}
+                color={isDark ? colors.warning : colors.textMuted}
+              />
+            </Pressable>
           </View>
 
           <View
