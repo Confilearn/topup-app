@@ -35,6 +35,26 @@ type ServiceType =
   | "internet"
   | null;
 
+// Function to format large amounts with appropriate sizing
+const formatBalance = (amount: number) => {
+  if (amount >= 1000000) {
+    return {
+      text: `₦${(amount / 1000000).toFixed(1)}M`,
+      fontSize: 28,
+    };
+  } else if (amount >= 1000) {
+    return {
+      text: `₦${(amount / 1000).toFixed(1)}K`,
+      fontSize: 30,
+    };
+  } else {
+    return {
+      text: `₦${amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`,
+      fontSize: 32,
+    };
+  }
+};
+
 const SERVICES = [
   {
     id: "airtime",
@@ -215,9 +235,22 @@ export default function DashboardScreen() {
         >
           <Text style={styles.walletLabel}>Wallet Balance</Text>
           <View style={styles.balanceRow}>
-            <Text style={styles.balanceAmount}>
+            <Text
+              style={[
+                styles.balanceAmount,
+                balanceVisible &&
+                userProfile?.balance &&
+                userProfile.balance >= 1000
+                  ? { fontSize: formatBalance(userProfile.balance).fontSize }
+                  : undefined,
+              ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+            >
               {balanceVisible
-                ? `₦${(userProfile?.balance || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`
+                ? userProfile?.balance
+                  ? formatBalance(userProfile.balance).text
+                  : `₦${(0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`
                 : "₦••••••"}
             </Text>
             <Pressable
@@ -338,11 +371,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     marginBottom: 20,
+    justifyContent: "space-between",
   },
   balanceAmount: {
     color: "#fff",
     fontSize: 32,
     fontFamily: "Nunito_800ExtraBold",
+    flex: 1,
+    minWidth: 0,
   },
   eyeBtn: { padding: 4 },
   fundBtn: {
