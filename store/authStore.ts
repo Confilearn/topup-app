@@ -1,8 +1,9 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { authAPI, initializeAuth, TokenStorage } from "@/lib/api";
+import { authAPI, userAPI, initializeAuth, TokenStorage } from "@/lib/api";
 import { useUserStore } from "./userStore";
+import { useNetInfoStore } from "./netInfoStore";
 import { useReferralStore } from "./referralStore";
 import { useTransactionStore } from "./transactionStore";
 import { useDepositStore } from "./depositStore";
@@ -174,6 +175,17 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
+          // Check offline status before making API call
+          const netInfoStore = useNetInfoStore.getState();
+          const isConnected = await netInfoStore.checkConnection();
+
+          if (!isConnected) {
+            netInfoStore.showOfflineModal();
+            set({ isLoading: false });
+            return;
+          }
+
+          console.log("Proceeding with password update API call...");
           await authAPI.updatePassword(currentPassword, newPassword);
           set({ isLoading: false, error: null });
         } catch (error) {
@@ -189,15 +201,45 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
-          // Note: The server doesn't have a profile update endpoint yet
-          // For now, we'll just update the local state
-          // In production, this should call: await authAPI.updateProfile(data);
+          console.log("Starting profile update...");
+          // Check offline status before making API call
+          const netInfoStore = useNetInfoStore.getState();
+          const isConnected = await netInfoStore.checkConnection();
 
-          set((state) => ({
-            user: state.user ? { ...state.user, ...data } : null,
+          console.log("Profile update - isConnected:", isConnected);
+          if (!isConnected) {
+            console.log(
+              "Showing offline modal for profile update - EARLY RETURN",
+            );
+            netInfoStore.showOfflineModal();
+            set({ isLoading: false });
+            return;
+          }
+
+          console.log("Proceeding with profile update API call...");
+          // Check if user exists and get user ID
+          const currentUser = get().user;
+          if (!currentUser) {
+            throw new Error("No authenticated user found");
+          }
+
+          console.log("About to call userAPI.updateProfile...");
+          // Call the backend API to update profile
+          const response = await userAPI.updateProfile(currentUser.id, data);
+
+          console.log("Profile update response received...");
+          // Update local state with the response from server
+          set({
+            user: response,
             isLoading: false,
             error: null,
-          }));
+          });
+
+          // Also update the userStore to keep it in sync
+          const userStore = useUserStore.getState();
+          if (userStore.userProfile?.id === currentUser.id) {
+            userStore.updateUserProfile(response);
+          }
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : "Profile update failed";
@@ -257,7 +299,7 @@ export const useAuthStore = create<AuthState>()(
       name: "auth-storage",
       storage: createJSONStorage(() => mobileStorage),
       // Only persist essential auth data
-      partialize: (state) => ({
+      partialize: (state: AuthState) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),

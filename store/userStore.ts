@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { userAPI } from "@/lib/api";
+import { useNetInfoStore } from "@/store/netInfoStore";
 
 // User interface - matches server response structure (non-sensitive data only)
 interface UserProfile {
@@ -114,6 +115,16 @@ export const useUserStore = create<UserStore>()(
         set({ isLoading: true, error: null });
 
         try {
+          // Check offline status before making API call
+          const netInfoStore = useNetInfoStore.getState();
+          const isConnected = await netInfoStore.checkConnection();
+
+          if (!isConnected) {
+            netInfoStore.showOfflineModal();
+            set({ isLoading: false });
+            return;
+          }
+
           // Fetch user profile from /user/profile/:id endpoint
           const response = await userAPI.getProfile(userId);
           // Store non-sensitive user data locally
@@ -225,6 +236,17 @@ export const useUserStore = create<UserStore>()(
         set({ isLoading: true, error: null });
 
         try {
+          // Check offline status before making API call
+          const netInfoStore = useNetInfoStore.getState();
+          const isConnected = await netInfoStore.checkConnection();
+
+          if (!isConnected) {
+            netInfoStore.showOfflineModal();
+            // set({ isLoading: false, error: "No internet connection" });
+            set({ isLoading: false });
+            return;
+          }
+
           // Call the virtual account creation API
           console.log("Calling API with userId:", userId, "BVN:", bvn);
           const response = await userAPI.createVirtualAccount(userId, bvn);

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as apiModule from "@/lib/api";
+import { useNetInfoStore } from "@/store/netInfoStore";
 
 const vtuAPI = apiModule.vtuAPI;
 
@@ -167,8 +168,18 @@ export const useVtuStore = create<VtuState>()(
         set({ isLoading: true });
 
         try {
+          // Check offline status before making API call
+          const netInfoStore = useNetInfoStore.getState();
+          const isConnected = await netInfoStore.checkConnection();
+
+          if (!isConnected) {
+            netInfoStore.showOfflineModal();
+            set({ isLoading: false });
+            return;
+          }
+
           // Fetch each service type separately like the web client does
-          console.log(" Fetching VTU services by type...");
+          console.log("Fetching VTU services by type...");
 
           const [
             airtimeResponse,
@@ -364,6 +375,16 @@ export const useVtuStore = create<VtuState>()(
           throw new Error("VTU API is not available");
         }
         try {
+          // Check offline status before making API call
+          const netInfoStore = useNetInfoStore.getState();
+          const isConnected = await netInfoStore.checkConnection();
+
+          if (!isConnected) {
+            netInfoStore.showOfflineModal();
+            // throw new Error("No internet connection");
+            return;
+          }
+
           const response = await vtuAPI.purchaseAirtime(payload);
           return response;
         } catch (error) {
@@ -377,6 +398,16 @@ export const useVtuStore = create<VtuState>()(
           throw new Error("VTU API is not available");
         }
         try {
+          // Check offline status before making API call
+          const netInfoStore = useNetInfoStore.getState();
+          const isConnected = await netInfoStore.checkConnection();
+
+          if (!isConnected) {
+            netInfoStore.showOfflineModal();
+            // throw new Error("No internet connection");
+            return;
+          }
+
           const response = await vtuAPI.purchaseData(payload);
           return response;
         } catch (error) {
@@ -390,6 +421,16 @@ export const useVtuStore = create<VtuState>()(
           throw new Error("VTU API is not available");
         }
         try {
+          // Check offline status before making API call
+          const netInfoStore = useNetInfoStore.getState();
+          const isConnected = await netInfoStore.checkConnection();
+
+          if (!isConnected) {
+            netInfoStore.showOfflineModal();
+            // throw new Error("No internet connection");
+            return;
+          }
+
           const response = await vtuAPI.payElectricity(payload);
           return response;
         } catch (error) {
@@ -403,6 +444,16 @@ export const useVtuStore = create<VtuState>()(
           throw new Error("VTU API is not available");
         }
         try {
+          // Check offline status before making API call
+          const netInfoStore = useNetInfoStore.getState();
+          const isConnected = await netInfoStore.checkConnection();
+
+          if (!isConnected) {
+            netInfoStore.showOfflineModal();
+            // throw new Error("No internet connection");
+            return;
+          }
+
           const response = await vtuAPI.subscribeCable(payload);
           return response;
         } catch (error) {

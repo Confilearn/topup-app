@@ -15,13 +15,24 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { OfflineModal } from "@/components/OfflineModal";
 import { useThemeStore } from "@/store/themeStore";
+import { useNetInfoStore } from "@/store/netInfoStore";
 import { queryClient } from "@/lib/query-client";
 
 SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav() {
   const { isDark } = useThemeStore();
+  const initializeNetInfo = useNetInfoStore((state) => state.initializeNetInfo);
+
+  useEffect(() => {
+    // Initialize NetInfo listener
+    const unsubscribe = initializeNetInfo();
+
+    // Cleanup on unmount
+    return unsubscribe;
+  }, [initializeNetInfo]);
 
   return (
     <>
@@ -36,6 +47,7 @@ function RootLayoutNav() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="transaction" />
       </Stack>
+      <OfflineModal />
     </>
   );
 }
