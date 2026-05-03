@@ -46,7 +46,7 @@ interface AuthState {
     currentPassword: string,
     newPassword: string,
   ) => Promise<boolean>;
-  updateProfile: (data: Partial<User>) => Promise<void>;
+  updateProfile: (data: Partial<User>) => Promise<boolean>;
   forgotPassword: (email: string) => Promise<boolean>;
   clearError: () => void;
   checkAuth: () => Promise<void>;
@@ -234,7 +234,7 @@ export const useAuthStore = create<AuthState>()(
             );
             netInfoStore.showOfflineModal();
             set({ isLoading: false });
-            return;
+            return false;
           }
 
           console.log("Proceeding with profile update API call...");
@@ -261,6 +261,7 @@ export const useAuthStore = create<AuthState>()(
           if (userStore.userProfile?.id === currentUser.id) {
             userStore.updateUserProfile(response);
           }
+          return true;
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : "Profile update failed";

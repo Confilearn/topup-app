@@ -83,28 +83,28 @@ export default function SettingsScreen() {
 
     setLoading(true);
     try {
-      // Call real API to update profile
-      await userAPI.updateProfile(user.id, {
+      // Use authStore updateProfile function with offline protection
+      const success = await updateProfile({
         firstName: profileForm.firstName,
         lastName: profileForm.lastName,
         phone: profileForm.phone,
       });
 
-      // Update local state optimistically
-      await updateProfile(profileForm);
+      if (success) {
+        // Update user profile store with the same data
+        updateUserProfile({
+          firstName: profileForm.firstName,
+          lastName: profileForm.lastName,
+          phone: profileForm.phone,
+        });
 
-      // Update user profile store with the same data
-      updateUserProfile({
-        firstName: profileForm.firstName,
-        lastName: profileForm.lastName,
-        phone: profileForm.phone,
-      });
-
-      setResult({
-        type: "success",
-        title: "Profile Updated!",
-        message: "Your profile has been updated successfully.",
-      });
+        setResult({
+          type: "success",
+          title: "Profile Updated!",
+          message: "Your profile has been updated successfully.",
+        });
+      }
+      // If success is false (offline), don't show success modal
     } catch (error) {
       const errorMessage =
         error instanceof Error
