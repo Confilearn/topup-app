@@ -46,8 +46,11 @@ export default function ForgotPasswordScreen() {
     setLoading(true);
 
     try {
-      await forgotPassword(email);
-      setShowResult(true);
+      const success = await forgotPassword(email);
+      if (success) {
+        setShowResult(true);
+      }
+      // If success is false (offline), don't show success modal
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to send reset email";

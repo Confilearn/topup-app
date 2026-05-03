@@ -47,7 +47,7 @@ interface AuthState {
     newPassword: string,
   ) => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
-  forgotPassword: (email: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<boolean>;
   clearError: () => void;
   checkAuth: () => Promise<void>;
 }
@@ -92,6 +92,16 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
+          // Check offline status before making API call
+          const netInfoStore = useNetInfoStore.getState();
+          const isConnected = await netInfoStore.checkConnection();
+
+          if (!isConnected) {
+            netInfoStore.showOfflineModal();
+            set({ isLoading: false });
+            return false;
+          }
+
           const response = await authAPI.login(email, password);
 
           set({
@@ -120,6 +130,16 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
+          // Check offline status before making API call
+          const netInfoStore = useNetInfoStore.getState();
+          const isConnected = await netInfoStore.checkConnection();
+
+          if (!isConnected) {
+            netInfoStore.showOfflineModal();
+            set({ isLoading: false });
+            return false;
+          }
+
           await authAPI.register(userData);
 
           // Note: Server doesn't return token on signup, user needs to login
@@ -253,8 +273,19 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
+          // Check offline status before making API call
+          const netInfoStore = useNetInfoStore.getState();
+          const isConnected = await netInfoStore.checkConnection();
+
+          if (!isConnected) {
+            netInfoStore.showOfflineModal();
+            set({ isLoading: false });
+            return false;
+          }
+
           await authAPI.forgotPassword(email);
           set({ isLoading: false, error: null });
+          return true;
         } catch (error) {
           const errorMessage =
             error instanceof Error
