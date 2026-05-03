@@ -271,8 +271,31 @@ export default function SettingsScreen() {
 
     setLoading(true);
     try {
+      // Debug: Check if email and password are available
+      console.log("PIN Verification - Auth user:", user);
+      console.log("PIN Verification - User profile:", userProfile);
+      console.log("PIN Verification - Password provided:", !!verifyPassword);
+
+      // Try to get email from authStore user first, then fallback to userProfile
+      const userEmail = user?.email || userProfile?.email;
+
+      if (!userEmail || !verifyPassword) {
+        console.log("PIN Verification - Missing email or password");
+        console.log("Email from authStore:", user?.email);
+        console.log("Email from userProfile:", userProfile?.email);
+
+        setResult({
+          type: "error",
+          title: "Verification Failed",
+          message:
+            "Unable to verify account. Please ensure you're logged in and enter your password.",
+        });
+        return;
+      }
+
+      console.log("PIN Verification - Using email:", userEmail);
       // Use authStore login function with offline protection
-      const loginSuccess = await login(user?.email || "", verifyPassword);
+      const loginSuccess = await login(userEmail, verifyPassword);
 
       if (loginSuccess) {
         // Password is correct, proceed with reset flow
@@ -728,6 +751,7 @@ export default function SettingsScreen() {
               <GradientButton
                 title="Verify & Reset"
                 onPress={handleVerifyForPinReset}
+                loading={loading}
                 style={{ flex: 1 }}
               />
               <GradientButton
