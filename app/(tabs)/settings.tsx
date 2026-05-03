@@ -27,7 +27,7 @@ import { userAPI, authAPI } from "@/lib/api";
 
 export default function SettingsScreen() {
   const colors = useColors();
-  const { user, logout, updatePassword, updateProfile } = useAuthStore();
+  const { user, logout, login, updatePassword, updateProfile } = useAuthStore();
   const { isDark, toggleTheme } = useThemeStore();
   const { userProfile, updateUserProfile, fetchUserProfile } = useUserStore();
   const scrollRef = useRef<ScrollView>(null);
@@ -271,14 +271,10 @@ export default function SettingsScreen() {
 
     setLoading(true);
     try {
-      // Verify current password by attempting to login with provided password
-      // This ensures the password is actually correct
-      const loginResult = await authAPI.login(
-        user?.email || "",
-        verifyPassword,
-      );
+      // Use authStore login function with offline protection
+      const loginSuccess = await login(user?.email || "", verifyPassword);
 
-      if (loginResult && loginResult.token) {
+      if (loginSuccess) {
         // Password is correct, proceed with reset flow
         setShowResetPin(false);
         setVerifyPassword("");
@@ -290,7 +286,13 @@ export default function SettingsScreen() {
           message: "Password verified successfully. Please set your new PIN.",
         });
       } else {
-        throw new Error("Invalid credentials");
+        // Login failed (either wrong password or offline)
+        // Don't show error modal if offline - let the offline modal handle it
+        if (!loginSuccess) {
+          // If login failed, don't show additional error modal
+          // The offline modal will be shown by the login function if needed
+          return;
+        }
       }
     } catch (error) {
       const errorMessage =
