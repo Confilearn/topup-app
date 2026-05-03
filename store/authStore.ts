@@ -45,7 +45,7 @@ interface AuthState {
   updatePassword: (
     currentPassword: string,
     newPassword: string,
-  ) => Promise<void>;
+  ) => Promise<boolean>;
   updateProfile: (data: Partial<User>) => Promise<void>;
   forgotPassword: (email: string) => Promise<boolean>;
   clearError: () => void;
@@ -202,12 +202,13 @@ export const useAuthStore = create<AuthState>()(
           if (!isConnected) {
             netInfoStore.showOfflineModal();
             set({ isLoading: false });
-            return;
+            return false;
           }
 
           console.log("Proceeding with password update API call...");
           await authAPI.updatePassword(currentPassword, newPassword);
           set({ isLoading: false, error: null });
+          return true;
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : "Password update failed";

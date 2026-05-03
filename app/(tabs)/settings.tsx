@@ -145,13 +145,16 @@ export default function SettingsScreen() {
 
     setLoading(true);
     try {
-      await updatePassword(pwForm.current, pwForm.newPw);
-      setPwForm({ current: "", newPw: "", confirm: "" });
-      setResult({
-        type: "success",
-        title: "Password Changed!",
-        message: "Your password has been updated successfully.",
-      });
+      const success = await updatePassword(pwForm.current, pwForm.newPw);
+      if (success) {
+        setPwForm({ current: "", newPw: "", confirm: "" });
+        setResult({
+          type: "success",
+          title: "Password Changed!",
+          message: "Your password has been updated successfully.",
+        });
+      }
+      // If success is false (offline), don't show success modal
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to change password";
