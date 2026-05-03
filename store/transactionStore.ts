@@ -53,7 +53,12 @@ interface TransactionStore {
   fetchTransactions: () => Promise<void>;
   fetchRecentTransactions: () => Promise<void>;
   addTransaction: (transaction: Transaction) => void;
+  updateTransactionStatus: (
+    reference: string,
+    updates: Partial<Transaction>,
+  ) => void;
   getTransaction: (id: string) => Transaction | undefined;
+  getTransactionByReference: (reference: string) => Transaction | undefined;
   getTransactionsByType: (type: string) => Transaction[];
   getTransactionsByStatus: (status: string) => Transaction[];
   clearTransactions: () => void;
@@ -227,9 +232,33 @@ export const useTransactionStore = create<TransactionStore>()(
         });
       },
 
+      // Update transaction status (for real-time polling)
+      updateTransactionStatus: (
+        reference: string,
+        updates: Partial<Transaction>,
+      ) => {
+        set((state) => {
+          const updatedTransactions = state.transactions.map((tx) =>
+            tx.reference === reference
+              ? { ...tx, ...updates, updatedAt: new Date().toISOString() }
+              : tx,
+          );
+
+          return {
+            transactions: updatedTransactions,
+            recentTransactions: updatedTransactions.slice(0, 5),
+          };
+        });
+      },
+
       // Get a specific transaction by ID
       getTransaction: (id: string) => {
         return get().transactions.find((tx) => tx._id === id);
+      },
+
+      // Get a specific transaction by reference
+      getTransactionByReference: (reference: string) => {
+        return get().transactions.find((tx) => tx.reference === reference);
       },
 
       // Get transactions filtered by type

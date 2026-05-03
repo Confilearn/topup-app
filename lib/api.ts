@@ -291,69 +291,95 @@ export const vtuAPI = {
 
   // Purchase airtime - matches POST /vtu/airtime
   purchaseAirtime: async (data: {
-    phone: string;
+    mobileNumber: string;
     amount: number;
     serviceID: string;
     network: string;
     reference?: string;
+    originalAmount?: number;
   }) => {
     return apiRequest("/vtu/airtime", {
       method: "POST",
       body: JSON.stringify({
         serviceID: data.serviceID,
         amount: data.amount,
-        mobileNumber: data.phone,
+        mobileNumber: data.mobileNumber,
         network: data.network,
-        originalAmount: data.amount, // Send original amount for API calculation
+        originalAmount: data.originalAmount || data.amount,
+        reference: data.reference,
       }),
     });
   },
 
   // Purchase data bundle - matches POST /vtu/data
   purchaseData: async (data: {
-    phone: string;
+    mobileNumber: string;
     plan: string;
     serviceID: string;
     network: string;
+    amount: number;
+    originalAmount?: number;
     reference?: string;
   }) => {
     return apiRequest("/vtu/data", {
       method: "POST",
       body: JSON.stringify({
         serviceID: data.serviceID,
-        mobileNumber: data.phone,
+        mobileNumber: data.mobileNumber,
         network: data.network,
         plan: data.plan,
-        amount: parseFloat(data.plan.match(/N(\d+)/)?.[1] || "0"), // Extract amount from plan string
+        amount: data.amount,
+        originalAmount: data.originalAmount || data.amount,
+        reference: data.reference,
       }),
     });
   },
 
   // Pay electricity bill - matches POST /vtu/electricity
   payElectricity: async (data: {
-    meterNumber: string;
+    serviceID: string;
+    meterNum: string;
     amount: number;
     provider: string;
-    customerName?: string;
+    meterType: string;
     reference?: string;
+    originalAmount?: number;
   }) => {
     return apiRequest("/vtu/electricity", {
       method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        serviceID: data.serviceID,
+        amount: data.amount,
+        meterNum: data.meterNum,
+        meterType: data.meterType,
+        provider: data.provider,
+        originalAmount: data.originalAmount || data.amount,
+        reference: data.reference,
+      }),
     });
   },
 
   // Subscribe to cable TV - matches POST /vtu/cable
   subscribeCable: async (data: {
-    smartcardNumber: string;
-    package: string;
+    serviceID: string;
+    cableNum: string;
+    plan: string;
     provider: string;
-    customerName?: string;
+    amount: number;
     reference?: string;
+    originalAmount?: number;
   }) => {
     return apiRequest("/vtu/cable", {
       method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        serviceID: data.serviceID,
+        cableNum: data.cableNum,
+        plan: data.plan,
+        provider: data.provider,
+        amount: data.amount,
+        originalAmount: data.originalAmount || data.amount,
+        reference: data.reference,
+      }),
     });
   },
 

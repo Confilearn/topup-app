@@ -19,6 +19,7 @@ import { DataModal } from "@/components/services/DataModal";
 import { ElectricityModal } from "@/components/services/ElectricityModal";
 import { CableModal } from "@/components/services/CableModal";
 import { UnavailableServiceModal } from "@/components/services/UnavailableServiceModal";
+import { useVtuStore } from "@/store/vtu-store";
 
 type ServiceType =
   | "airtime"
@@ -82,19 +83,27 @@ const SERVICES = [
 
 export default function ServicesScreen() {
   const colors = useColors();
+  const { fetchServices, isLoading } = useVtuStore();
   const [activeModal, setActiveModal] = useState<ServiceType>(null);
   const [unavailableService, setUnavailableService] = useState<string | null>(
     null,
   );
   const scrollRef = useRef<ScrollView>(null);
 
-  // Auto-scroll to top when screen comes into focus
+  // Fetch VTU services when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
+      // Auto-scroll to top
       setTimeout(() => {
         scrollRef.current?.scrollTo({ y: 0, animated: true });
       }, 100);
-    }, []),
+
+      // Fetch VTU services data
+      console.log("🔄 Fetching VTU services data...");
+      fetchServices().catch((error) => {
+        console.error("❌ Failed to fetch VTU services:", error);
+      });
+    }, [fetchServices]),
   );
 
   return (
@@ -114,6 +123,14 @@ export default function ServicesScreen() {
         <Text style={[styles.subtitle, { color: colors.textMuted }]}>
           Choose a service to get started
         </Text>
+
+        {isLoading && (
+          <View style={styles.loadingContainer}>
+            <Text style={[styles.loadingText, { color: colors.textMuted }]}>
+              Loading services...
+            </Text>
+          </View>
+        )}
 
         <View style={styles.list}>
           {SERVICES.map((svc) => {
@@ -216,6 +233,15 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 20, paddingBottom: 110 },
   title: { fontSize: 28, fontFamily: "Nunito_800ExtraBold", marginBottom: 6 },
   subtitle: { fontSize: 14, fontFamily: "Nunito_400Regular", marginBottom: 24 },
+  loadingContainer: {
+    alignItems: "center",
+    paddingVertical: 20,
+    marginBottom: 16,
+  },
+  loadingText: {
+    fontSize: 14,
+    fontFamily: "Nunito_500Medium",
+  },
   list: { gap: 14 },
   card: { borderRadius: 18, padding: 20, gap: 16, borderWidth: 1 },
   cardTop: { flexDirection: "row", gap: 14, alignItems: "center" },

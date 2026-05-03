@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useColors } from "@/hooks/useTheme";
 import { Input } from "@/components/ui/Input";
@@ -6,129 +6,246 @@ import { ServiceSheetModal } from "./ServiceSheetModal";
 import { useVtuStore } from "@/store/vtu-store";
 import { useTransactionStore } from "@/store/transactionStore";
 import { useAuthStore } from "@/store/authStore";
+import { useTransactionPolling } from "@/hooks/useTransactionPolling";
 import { Ionicons } from "@expo/vector-icons";
+import { VtuService } from "@/store/vtu-store";
 
 interface DataModalProps {
   visible: boolean;
   onClose: () => void;
 }
 
+/**
+ * DataModal - Dynamic data bundle purchase modal
+ * Uses store data instead of hardcoded values for better maintainability
+ * Implements proper markup calculation and transaction tracking
+ */
 export function DataModal({ visible, onClose }: DataModalProps) {
   const colors = useColors();
   const { user } = useAuthStore();
-  const [selectedNetwork, setSelectedNetwork] = useState<any>(null);
+  const [selectedNetwork, setSelectedNetwork] = useState<VtuService | null>(
+    null,
+  );
   const [phone, setPhone] = useState("");
   const [dataType, setDataType] = useState("");
-  const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [selectedPlan, setSelectedPlan] = useState<VtuService | null>(null);
   const [showNetworkDropdown, setShowNetworkDropdown] = useState(false);
   const [showDataTypeDropdown, setShowDataTypeDropdown] = useState(false);
   const [showPlanDropdown, setShowPlanDropdown] = useState(false);
+  const [transactionReference, setTransactionReference] = useState<
+    string | null
+  >(null);
+
   const { addTransaction } = useTransactionStore();
-  const { dataServices, purchaseData } = useVtuStore();
+  const { dataServices, purchaseData, isLoading } = useVtuStore();
+  const { startPolling } = useTransactionPolling({ enabled: true });
 
-  // Define networks
-  const networks = [
-    { id: "mtn", name: "MTN", description: "MTN Nigeria" },
-    { id: "glo", name: "Glo", description: "Globacom" },
-    { id: "airtel", name: "Airtel", description: "Airtel Nigeria" },
-    { id: "9mobile", name: "9mobile", description: "9mobile" },
-  ];
+  // Debug: Log data services
+  console.log(
+    "🔍 DataModal - dataServices:",
+    dataServices.length,
+    dataServices.slice(0, 2),
+  );
 
-  // Define data types
-  const dataTypes = [
-    { id: "sme", name: "SME Data" },
-    { id: "gifting", name: "Gifting Data" },
-    { id: "corporate", name: "Corporate Data" },
-    { id: "normal", name: "Normal Data" },
-  ];
+  // Derive networks dynamically from store data
+  const networks = useMemo(() => {
+    const uniqueNetworks = Array.from(
+      new Set(dataServices.map((service) => service.network)),
+    ).filter(Boolean);
 
-  // Define data plans for each network
-  const dataPlans = {
-    mtn: [
-      { id: "mtn_500mb", size: "500MB", price: 365, validity: "30 Days" },
-      { id: "mtn_1gb", size: "1GB", price: 550, validity: "30 Days" },
-      { id: "mtn_2gb", size: "2GB", price: 1100, validity: "30 Days" },
-      { id: "mtn_3gb", size: "3GB", price: 1650, validity: "30 Days" },
-      { id: "mtn_5gb", size: "5GB", price: 2750, validity: "30 Days" },
-      { id: "mtn_10gb", size: "10GB", price: 5500, validity: "30 Days" },
-    ],
-    glo: [
-      { id: "glo_500mb", size: "500MB", price: 300, validity: "30 Days" },
-      { id: "glo_1gb", size: "1GB", price: 500, validity: "30 Days" },
-      { id: "glo_2gb", size: "2GB", price: 900, validity: "30 Days" },
-      { id: "glo_3gb", size: "3GB", price: 1300, validity: "30 Days" },
-      { id: "glo_5gb", size: "5GB", price: 2000, validity: "30 Days" },
-      { id: "glo_10gb", size: "10GB", price: 3500, validity: "30 Days" },
-    ],
-    airtel: [
-      { id: "airtel_500mb", size: "500MB", price: 350, validity: "30 Days" },
-      { id: "airtel_1gb", size: "1GB", price: 600, validity: "30 Days" },
-      { id: "airtel_2gb", size: "2GB", price: 1200, validity: "30 Days" },
-      { id: "airtel_3gb", size: "3GB", price: 1800, validity: "30 Days" },
-      { id: "airtel_5gb", size: "5GB", price: 3000, validity: "30 Days" },
-      { id: "airtel_10gb", size: "10GB", price: 6000, validity: "30 Days" },
-    ],
-    "9mobile": [
-      { id: "9mobile_500mb", size: "500MB", price: 320, validity: "30 Days" },
-      { id: "9mobile_1gb", size: "1GB", price: 550, validity: "30 Days" },
-      { id: "9mobile_2gb", size: "2GB", price: 1000, validity: "30 Days" },
-      { id: "9mobile_3gb", size: "3GB", price: 1500, validity: "30 Days" },
-      { id: "9mobile_5gb", size: "5GB", price: 2500, validity: "30 Days" },
-      { id: "9mobile_10gb", size: "10GB", price: 4500, validity: "30 Days" },
-    ],
+    return uniqueNetworks.map((networkName) => {
+      const service = dataServices.find((s) => s.network === networkName);
+      return {
+        id: networkName?.toLowerCase(),
+        name: networkName?.toUpperCase() || "",
+        description: service?.description || `${networkName} Data Services`,
+        serviceID: service?.serviceID,
+        network: networkName,
+        markupPercentage: service?.markupPercentage || 0,
+      };
+    });
+  }, [dataServices]);
+
+  // Derive data types dynamically from store data
+  const dataTypes = useMemo(() => {
+    const uniqueTypes = Array.from(
+      new Set(dataServices.map((service) => service.dataType || "")),
+    ).filter(Boolean);
+
+    return uniqueTypes.map((type) => ({
+      id: type?.toLowerCase() || "",
+      name:
+        type?.charAt(0)?.toUpperCase() + type?.slice(1)?.toLowerCase() || "",
+    }));
+  }, [dataServices]);
+
+  // Filter plans based on selected network and data type
+  const availablePlans = useMemo(() => {
+    if (!selectedNetwork || !dataType) return [];
+
+    return dataServices.filter(
+      (service) =>
+        service.network === selectedNetwork?.network &&
+        service.dataType?.toLowerCase() === dataType.toLowerCase(),
+    );
+  }, [selectedNetwork, dataType, dataServices]);
+
+  // Calculate markup using server-provided percentage
+  const calculateMarkup = (
+    originalAmount: number,
+    markupPercentage: number,
+  ) => {
+    return markupPercentage > 0
+      ? originalAmount * (1 + markupPercentage / 100)
+      : originalAmount;
   };
 
-  const fee = selectedPlan ? Math.round(Number(selectedPlan.price) * 0.1) : 0;
-  const total = selectedPlan ? Number(selectedPlan.price) + fee : 0;
+  // Calculate fee and total using proper markup
+  const fee = useMemo(() => {
+    if (!selectedPlan) return 0;
+    const originalAmount = parseFloat(
+      selectedPlan.originalAmount || selectedPlan.amount || "0",
+    );
+    const markedUpAmount = parseFloat(selectedPlan.amount || "0");
+    return Math.round(markedUpAmount - originalAmount);
+  }, [selectedPlan]);
 
+  const total = useMemo(() => {
+    if (!selectedPlan) return 0;
+    return parseFloat(selectedPlan.amount || "0");
+  }, [selectedPlan]);
+
+  /**
+   * Handle data purchase with proper transaction tracking
+   * Uses server-provided markup and generates unique reference
+   */
   const handleConfirmed = async () => {
     if (!selectedNetwork || !phone || !dataType || !selectedPlan) return;
 
+    // Generate unique transaction reference
+    const reference = `DATA-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    setTransactionReference(reference);
+
     try {
-      // Call VTU API to purchase data
-      await purchaseData({
-        phone,
-        plan: `${selectedNetwork.name} ${selectedPlan.size} - N${selectedPlan.price} (${selectedPlan.validity})`,
-        serviceID: selectedNetwork.serviceID || selectedNetwork.id,
-        network: selectedNetwork.network || selectedNetwork.id,
-        reference: `DATA-${Date.now()}`,
+      // Call VTU API with proper payload structure
+      const response = await purchaseData({
+        serviceID: selectedPlan.serviceID,
+        mobileNumber: phone,
+        network: selectedNetwork.network,
+        plan:
+          selectedPlan.description ||
+          `${selectedNetwork.network} ${selectedPlan.description}`,
+        amount: parseFloat(selectedPlan.amount), // Marked-up amount
+        originalAmount: parseFloat(
+          selectedPlan.originalAmount || selectedPlan.amount,
+        ), // Original amount
+        reference,
       });
 
-      // Update local state
-      addTransaction({
-        _id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      // Add transaction to local store with proper status tracking
+      const transaction = {
+        _id: reference,
         userId: user?.id || "unknown",
-        type: "data",
-        amount: total,
-        feeAmount: fee,
-        status: "completed",
-        reference: `DATA-${Date.now()}`,
+        type: "data" as const,
+        amount: total, // Marked-up amount charged to user
+        originalAmount: parseFloat(
+          selectedPlan.originalAmount || selectedPlan.amount,
+        ), // Original service amount
+        feeAmount: fee, // Service fee
+        status: "pending" as const, // Start as pending, update based on server response
+        reference,
         fullName:
           `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "User",
         createdAt: new Date().toISOString(),
         details: {
           mobileNumber: phone,
-          network: selectedNetwork.name,
-          dataPlan: `${selectedNetwork.name} ${selectedPlan.size} - N${selectedPlan.price} (${selectedPlan.validity})`,
+          network: selectedNetwork.network,
+          dataPlan: selectedPlan.description,
+          dataType,
+          serviceID: selectedPlan.serviceID,
+          markupPercentage: selectedPlan.markupPercentage || 0,
         },
-      });
-    } catch (error) {
-      console.error("Data purchase failed:", error);
-      throw error; // Re-throw to let ServiceSheetModal handle it
-    }
+      };
 
-    setPhone("");
-    setSelectedNetwork(null);
-    setDataType("");
-    setSelectedPlan(null);
+      addTransaction(transaction);
+
+      // Start polling for transaction status updates
+      startPolling(reference);
+
+      // Reset form on successful submission
+      setPhone("");
+      setSelectedNetwork(null);
+      setDataType("");
+      setSelectedPlan(null);
+      setTransactionReference(null);
+    } catch (error: any) {
+      console.error("Data purchase failed:", error);
+
+      // Add failed transaction for tracking
+      addTransaction({
+        _id: reference,
+        userId: user?.id || "unknown",
+        type: "data" as const,
+        amount: total,
+        feeAmount: fee,
+        status: "failed" as const,
+        reference,
+        fullName:
+          `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "User",
+        createdAt: new Date().toISOString(),
+        details: {
+          mobileNumber: phone,
+          network: selectedNetwork?.network,
+          dataPlan: selectedPlan?.description,
+          dataType,
+          serviceID: selectedPlan?.serviceID,
+          markupPercentage: selectedPlan?.markupPercentage || 0,
+          error: error.message || "Purchase failed",
+        } as any, // Type assertion to allow error property
+      });
+
+      // Reset transaction reference on error
+      setTransactionReference(null);
+
+      // Re-throw error to let ServiceSheetModal handle display
+      throw error;
+    }
   };
 
+  /**
+   * Reset form state and close modal
+   */
   const handleClose = () => {
     setPhone("");
     setSelectedNetwork(null);
     setDataType("");
     setSelectedPlan(null);
+    setTransactionReference(null);
+    setShowNetworkDropdown(false);
+    setShowDataTypeDropdown(false);
+    setShowPlanDropdown(false);
     onClose();
+  };
+
+  /**
+   * Reset dependent fields when parent selection changes
+   */
+  const handleNetworkChange = (network: any) => {
+    setSelectedNetwork(network);
+    setDataType("");
+    setSelectedPlan(null);
+    setShowNetworkDropdown(false);
+  };
+
+  const handleDataTypeChange = (type: any) => {
+    setDataType(type.id);
+    setSelectedPlan(null);
+    setShowDataTypeDropdown(false);
+  };
+
+  const handlePlanChange = (plan: VtuService) => {
+    setSelectedPlan(plan);
+    setShowPlanDropdown(false);
   };
 
   return (
@@ -139,10 +256,12 @@ export function DataModal({ visible, onClose }: DataModalProps) {
       subtitle="Purchase data plans for all networks"
       proceedLabel={
         selectedNetwork && dataType && selectedPlan
-          ? `Purchase ${selectedNetwork.name} ${selectedPlan.size} for ₦${total.toLocaleString()}`
+          ? `Purchase ${selectedPlan.description} for ₦${total.toLocaleString()}`
           : "Select Network & Plan"
       }
-      proceedDisabled={!selectedNetwork || !phone || !dataType || !selectedPlan}
+      proceedDisabled={
+        !selectedNetwork || !phone || !dataType || !selectedPlan || isLoading
+      }
       onProceed={() => !!(selectedNetwork && phone && dataType && selectedPlan)}
       onConfirmed={handleConfirmed}
     >
@@ -172,7 +291,7 @@ export function DataModal({ visible, onClose }: DataModalProps) {
                   },
                 ]}
               >
-                {selectedNetwork ? selectedNetwork.name : "Select Network"}
+                {selectedNetwork?.network?.toUpperCase() || "Select Network"}
               </Text>
               <Ionicons
                 name={showNetworkDropdown ? "chevron-up" : "chevron-down"}
@@ -200,12 +319,7 @@ export function DataModal({ visible, onClose }: DataModalProps) {
                         borderBottomColor: colors.border,
                       },
                     ]}
-                    onPress={() => {
-                      setSelectedNetwork(network);
-                      setShowNetworkDropdown(false);
-                      setDataType("");
-                      setSelectedPlan(null);
-                    }}
+                    onPress={() => handleNetworkChange(network)}
                   >
                     <Text
                       style={[
@@ -215,7 +329,7 @@ export function DataModal({ visible, onClose }: DataModalProps) {
                     >
                       {network.name}
                     </Text>
-                    {selectedNetwork?.id === network.id && (
+                    {selectedNetwork?.serviceID === network.serviceID && (
                       <Ionicons
                         name="checkmark"
                         size={16}
@@ -288,11 +402,7 @@ export function DataModal({ visible, onClose }: DataModalProps) {
                         borderBottomColor: colors.border,
                       },
                     ]}
-                    onPress={() => {
-                      setDataType(type.id);
-                      setShowDataTypeDropdown(false);
-                      setSelectedPlan(null);
-                    }}
+                    onPress={() => handleDataTypeChange(type)}
                   >
                     <Text
                       style={[
@@ -339,7 +449,7 @@ export function DataModal({ visible, onClose }: DataModalProps) {
                 ]}
               >
                 {selectedPlan
-                  ? `${selectedNetwork.name} ${selectedPlan.size} - N${selectedPlan.price} (${selectedPlan.validity})`
+                  ? `${selectedNetwork?.network?.toUpperCase() || ""} ${selectedPlan?.description || ""} - N${total.toLocaleString()} ${selectedPlan.validity ? `(${selectedPlan.validity})` : ""}`
                   : "Select Data Plan"}
               </Text>
               <Ionicons
@@ -359,39 +469,60 @@ export function DataModal({ visible, onClose }: DataModalProps) {
                   },
                 ]}
               >
-                {dataPlans[selectedNetwork.id]?.map((plan) => (
+                {availablePlans.map((plan) => (
                   <Pressable
-                    key={plan.id}
+                    key={plan.serviceID}
                     style={[
                       styles.dropdownItem,
                       {
                         borderBottomColor: colors.border,
                       },
                     ]}
-                    onPress={() => {
-                      setSelectedPlan(plan);
-                      setShowPlanDropdown(false);
-                    }}
+                    onPress={() => handlePlanChange(plan)}
                   >
-                    <View>
+                    <View style={styles.planContainer}>
                       <Text
                         style={[
                           styles.dropdownItemText,
                           { color: colors.textPrimary },
                         ]}
                       >
-                        {selectedNetwork.name} {plan.size} - N{plan.price}
+                        {plan.description}
                       </Text>
-                      <Text
-                        style={[
-                          styles.planValidity,
-                          { color: colors.textMuted },
-                        ]}
-                      >
-                        {plan.validity}
-                      </Text>
+                      <View style={styles.planPricing}>
+                        {plan.originalAmount &&
+                          plan.originalAmount !== plan.amount && (
+                            <Text
+                              style={[
+                                styles.originalPrice,
+                                { color: colors.textMuted },
+                              ]}
+                            >
+                              ₦
+                              {parseFloat(plan.originalAmount).toLocaleString()}
+                            </Text>
+                          )}
+                        <Text
+                          style={[
+                            styles.currentPrice,
+                            { color: colors.textPrimary },
+                          ]}
+                        >
+                          ₦{parseFloat(plan.amount).toLocaleString()}
+                        </Text>
+                      </View>
+                      {plan.validity && (
+                        <Text
+                          style={[
+                            styles.planValidity,
+                            { color: colors.textMuted },
+                          ]}
+                        >
+                          {plan.validity}
+                        </Text>
+                      )}
                     </View>
-                    {selectedPlan?.id === plan.id && (
+                    {selectedPlan?.serviceID === plan.serviceID && (
                       <Ionicons
                         name="checkmark"
                         size={16}
@@ -415,8 +546,22 @@ export function DataModal({ visible, onClose }: DataModalProps) {
               ]}
             >
               <Text style={[styles.feeText, { color: colors.warning }]}>
-                10% fee: ₦{fee} · Total: ₦{total.toLocaleString()}
+                {selectedPlan.markupPercentage
+                  ? `${selectedPlan.markupPercentage}% service fee: ₦${fee} · Total: ₦${total.toLocaleString()}`
+                  : `Service fee: ₦${fee} · Total: ₦${total.toLocaleString()}`}
               </Text>
+              {selectedPlan.originalAmount &&
+                selectedPlan.originalAmount !== selectedPlan.amount && (
+                  <Text
+                    style={[
+                      styles.originalAmountText,
+                      { color: colors.textMuted },
+                    ]}
+                  >
+                    Original price: ₦
+                    {parseFloat(selectedPlan.originalAmount).toLocaleString()}
+                  </Text>
+                )}
             </View>
           )}
         </>
@@ -452,11 +597,44 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   dropdownItemText: { fontSize: 16, fontFamily: "Nunito_400Regular" },
+  planContainer: {
+    flex: 1,
+  },
+  planPricing: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 2,
+  },
+  originalPrice: {
+    fontSize: 12,
+    fontFamily: "Nunito_400Regular",
+    textDecorationLine: "line-through",
+  },
+  currentPrice: {
+    fontSize: 14,
+    fontFamily: "Nunito_600SemiBold",
+  },
   planValidity: {
     fontSize: 12,
     fontFamily: "Nunito_400Regular",
     marginTop: 2,
   },
-  feeBox: { padding: 12, borderRadius: 10, borderWidth: 1 },
-  feeText: { fontSize: 12, fontFamily: "Nunito_500Medium" },
+  feeBox: {
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginTop: 8,
+  },
+  feeText: {
+    fontSize: 12,
+    fontFamily: "Nunito_500Medium",
+    textAlign: "center",
+  },
+  originalAmountText: {
+    fontSize: 11,
+    fontFamily: "Nunito_400Regular",
+    textAlign: "center",
+    marginTop: 4,
+  },
 });

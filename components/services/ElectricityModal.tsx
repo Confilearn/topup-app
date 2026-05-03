@@ -1,93 +1,234 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useColors } from "@/hooks/useTheme";
 import { Input } from "@/components/ui/Input";
 import { ServiceSheetModal } from "./ServiceSheetModal";
 import { useVtuStore } from "@/store/vtu-store";
 import { useTransactionStore } from "@/store/transactionStore";
+import { useAuthStore } from "@/store/authStore";
 import { Ionicons } from "@expo/vector-icons";
+import { VtuService } from "@/store/vtu-store";
 
 interface ElectricityModalProps {
   visible: boolean;
   onClose: () => void;
 }
 
+/**
+ * ElectricityModal - Dynamic electricity bill payment modal
+ * Uses store data and server-provided markup percentages
+ * Implements proper transaction tracking and error handling
+ */
 export function ElectricityModal({ visible, onClose }: ElectricityModalProps) {
   const colors = useColors();
-  const [selectedService, setSelectedService] = useState<any>(null);
+  const { user } = useAuthStore();
+  const [selectedService, setSelectedService] = useState<VtuService | null>(
+    null,
+  );
   const [meterNumber, setMeterNumber] = useState("");
   const [amount, setAmount] = useState("");
   const [showProviderDropdown, setShowProviderDropdown] = useState(false);
   const [showMeterTypeDropdown, setShowMeterTypeDropdown] = useState(false);
   const [meterType, setMeterType] = useState("");
-  const { addTransaction } = useTransactionStore();
-  const { electricityServices, purchaseElectricity } = useVtuStore();
+  const [transactionReference, setTransactionReference] = useState<
+    string | null
+  >(null);
 
-  // Define electricity providers
-  const providers = [
-    { id: "ekedc", name: "EKEDC", description: "Eko Electricity" },
-    { id: "ikedc", name: "IKEDC", description: "Ikeja Electricity" },
-    { id: "phedc", name: "PHEDC", description: "Port Harcourt Electricity" },
-    { id: "kedco", name: "KEDCO", description: "Kano Electricity" },
-    { id: "aedc", name: "AEDC", description: "Abuja Electricity" },
-    { id: "ibedc", name: "IBEDC", description: "Ibadan Electricity" },
-  ];
+  const { addTransaction } = useTransactionStore();
+  const { electricityServices, purchaseElectricity, isLoading } = useVtuStore();
+
+  // Debug: Log electricity services
+  console.log(
+    "🔍 ElectricityModal - electricityServices:",
+    electricityServices.length,
+    electricityServices.slice(0, 2),
+  );
+
+  // Derive providers dynamically from store data
+  const providers = useMemo(() => {
+    return electricityServices.map((service) => ({
+      id:
+        service.description?.toLowerCase().replace(/\s+/g, "-") ||
+        service.serviceID,
+      name: service.description || service.serviceID || "",
+      description: service.description || `${service.description} Electricity`,
+      serviceID: service.serviceID,
+      provider: service.description,
+      markupPercentage: service.markupPercentage || 0,
+    }));
+  }, [electricityServices]);
 
   // Define meter types
   const meterTypes = [
-    { id: "prepaid", name: "Prepaid" },
-    { id: "postpaid", name: "Postpaid" },
+    { id: "prepaid", name: "Prepaid", code: "01" },
+    { id: "postpaid", name: "Postpaid", code: "02" },
   ];
 
-  const fee = amount ? Math.round(Number(amount) * 0.1) : 0;
-  const total = amount ? Number(amount) + fee : 0;
+  // Calculate markup using server-provided percentage
+  const calculateTotalWithMarkup = (
+    originalAmount: number,
+    markupPercentage: number,
+  ) => {
+    return markupPercentage > 0
+      ? originalAmount * (1 + markupPercentage / 100)
+      : originalAmount;
+  };
 
+  // Calculate fee and total using proper markup from selected service
+  const fee = useMemo(() => {
+    if (!amount || !selectedService) return 0;
+    const originalAmount = Number(amount);
+    const markupPercentage = selectedService.markupPercentage || 0;
+    const totalAmount = calculateTotalWithMarkup(
+      originalAmount,
+      markupPercentage,
+    );
+    return Math.round(totalAmount - originalAmount);
+  }, [amount, selectedService]);
+
+  const total = useMemo(() => {
+    if (!amount || !selectedService) return 0;
+    const originalAmount = Number(amount);
+    const markupPercentage = selectedService.markupPercentage || 0;
+    return calculateTotalWithMarkup(originalAmount, markupPercentage);
+  }, [amount, selectedService]);
+
+  /**
+   * Handle electricity payment with proper transaction tracking
+   * Uses server-provided markup and generates unique reference
+   */
   const handleConfirmed = async () => {
     if (!selectedService || !meterNumber || !meterType || !amount) return;
 
-    try {
-      // Call the VTU API to purchase electricity
-      await purchaseElectricity({
-        meterNumber,
-        amount: Number(amount),
-        provider: selectedService.id,
-        meterType,
-        reference: `ELEC-${Date.now()}`,
-      });
-
-      // Update local state
-      addTransaction({
-        _id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-        userId: "1", // TODO: Get actual user ID from auth store
-        type: "electricity",
-        amount: total,
-        feeAmount: fee,
-        status: "completed",
-        reference: `ELEC-${Date.now()}`,
-        fullName: "User", // TODO: Get actual user name
-        createdAt: new Date().toISOString(),
-        details: {
-          meterNum: meterNumber,
-          disco: selectedService.name,
-        },
-      });
-    } catch (error) {
-      console.error("Electricity purchase failed:", error);
-      throw error; // Re-throw to let ServiceSheetModal handle it
+    // Validate minimum amount for electricity (₦1,000)
+    const originalAmount = Number(amount);
+    if (originalAmount < 1000) {
+      throw new Error("Minimum amount for electricity bills is ₦1,000");
     }
 
-    setMeterNumber("");
-    setAmount("");
-    setSelectedService(null);
-    setMeterType("");
+    // Generate unique transaction reference
+    const reference = `ELEC-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    setTransactionReference(reference);
+
+    const markupPercentage = selectedService.markupPercentage || 0;
+    const markedUpAmount = calculateTotalWithMarkup(
+      originalAmount,
+      markupPercentage,
+    );
+    const selectedMeterType = meterTypes.find((mt) => mt.id === meterType);
+
+    try {
+      // Call VTU API with proper payload structure
+      const response = await purchaseElectricity({
+        serviceID: selectedService.serviceID,
+        amount: markedUpAmount, // Marked-up amount to charge user
+        originalAmount: originalAmount, // Original amount for API
+        meterNum: meterNumber,
+        meterType: selectedMeterType?.code || meterType,
+        provider: selectedService.provider,
+        reference,
+      });
+
+      // Add transaction to local store with proper status tracking
+      const transaction = {
+        _id: reference,
+        userId: user?.id || "unknown",
+        type: "electricity" as const,
+        amount: markedUpAmount, // Amount charged to user
+        originalAmount: originalAmount, // Original electricity amount
+        feeAmount: fee, // Service fee
+        status: "pending" as const, // Start as pending, update based on server response
+        reference,
+        fullName:
+          `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "User",
+        createdAt: new Date().toISOString(),
+        details: {
+          meterNumber: meterNumber,
+          provider: selectedService.provider,
+          meterType: selectedMeterType?.name || meterType,
+          serviceID: selectedService.serviceID,
+          markupPercentage: markupPercentage,
+        },
+      };
+
+      addTransaction(transaction);
+
+      // Reset form on successful submission
+      setMeterNumber("");
+      setAmount("");
+      setSelectedService(null);
+      setMeterType("");
+      setTransactionReference(null);
+    } catch (error: any) {
+      console.error("Electricity purchase failed:", error);
+
+      // Add failed transaction for tracking
+      addTransaction({
+        _id: reference,
+        userId: user?.id || "unknown",
+        type: "electricity" as const,
+        amount: markedUpAmount,
+        feeAmount: fee,
+        status: "failed" as const,
+        reference,
+        fullName:
+          `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "User",
+        createdAt: new Date().toISOString(),
+        details: {
+          meterNumber: meterNumber,
+          provider: selectedService?.provider,
+          meterType: selectedMeterType?.name || meterType,
+          serviceID: selectedService?.serviceID,
+          markupPercentage: markupPercentage,
+          error: error.message || "Purchase failed",
+        } as any, // Type assertion to allow error property
+      });
+
+      // Reset transaction reference on error
+      setTransactionReference(null);
+
+      // Re-throw error to let ServiceSheetModal handle display
+      throw error;
+    }
   };
 
+  /**
+   * Reset form state and close modal
+   */
   const handleClose = () => {
     setMeterNumber("");
     setAmount("");
     setSelectedService(null);
     setMeterType("");
+    setTransactionReference(null);
+    setShowProviderDropdown(false);
+    setShowMeterTypeDropdown(false);
     onClose();
+  };
+
+  /**
+   * Handle provider selection with proper state reset
+   */
+  const handleProviderChange = (provider: any) => {
+    // Create a VtuService-compatible object from provider data
+    const vtuService: VtuService = {
+      serviceID: provider.serviceID,
+      amount: "0",
+      originalAmount: "0",
+      markupPercentage: provider.markupPercentage || 0,
+      network: provider.provider,
+      description: provider.description,
+      isActive: true,
+    };
+
+    setSelectedService(vtuService);
+    setShowProviderDropdown(false);
+    setAmount(""); // Clear amount when switching providers
+  };
+
+  const handleMeterTypeChange = (type: any) => {
+    setMeterType(type.id);
+    setShowMeterTypeDropdown(false);
   };
 
   return (
@@ -98,11 +239,11 @@ export function ElectricityModal({ visible, onClose }: ElectricityModalProps) {
       subtitle="Pay for EKEDC, IKEDC, PHEDC & more"
       proceedLabel={
         selectedService && meterType && amount
-          ? `Pay ₦${total.toLocaleString()} for ${selectedService.name}`
-          : "Select Provider & Enter Details"
+          ? `Pay ${selectedService.provider || selectedService.description} Bill - ₦${total.toLocaleString()}`
+          : "Select Provider & Amount"
       }
       proceedDisabled={
-        !selectedService || !meterNumber || !meterType || !amount
+        !selectedService || !meterNumber || !meterType || !amount || isLoading
       }
       onProceed={() =>
         !!(selectedService && meterNumber && meterType && amount)
@@ -135,7 +276,9 @@ export function ElectricityModal({ visible, onClose }: ElectricityModalProps) {
                   },
                 ]}
               >
-                {selectedService ? selectedService.name : "Select Provider"}
+                {selectedService
+                  ? selectedService.provider || selectedService.description
+                  : "Select Provider"}
               </Text>
               <Ionicons
                 name={showProviderDropdown ? "chevron-up" : "chevron-down"}
@@ -164,8 +307,20 @@ export function ElectricityModal({ visible, onClose }: ElectricityModalProps) {
                       },
                     ]}
                     onPress={() => {
-                      setSelectedService(provider);
+                      // Create a VtuService-compatible object from provider data
+                      const vtuService: VtuService = {
+                        serviceID: provider.serviceID,
+                        amount: "0",
+                        originalAmount: "0",
+                        markupPercentage: provider.markupPercentage || 0,
+                        network: provider.provider,
+                        description: provider.description,
+                        isActive: true,
+                      };
+
+                      setSelectedService(vtuService);
                       setShowProviderDropdown(false);
+                      setAmount(""); // Clear amount when switching providers
                     }}
                   >
                     <Text
@@ -174,9 +329,9 @@ export function ElectricityModal({ visible, onClose }: ElectricityModalProps) {
                         { color: colors.textPrimary },
                       ]}
                     >
-                      {provider.name}
+                      {provider.provider || provider.name}
                     </Text>
-                    {selectedService?.id === provider.id && (
+                    {selectedService?.serviceID === provider.serviceID && (
                       <Ionicons
                         name="checkmark"
                         size={16}

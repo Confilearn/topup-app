@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useColors } from "@/hooks/useTheme";
 import { Input } from "@/components/ui/Input";
@@ -6,80 +6,193 @@ import { ServiceSheetModal } from "./ServiceSheetModal";
 import { useVtuStore } from "@/store/vtu-store";
 import { useTransactionStore } from "@/store/transactionStore";
 import { useAuthStore } from "@/store/authStore";
+import { useTransactionPolling } from "@/hooks/useTransactionPolling";
 import { Ionicons } from "@expo/vector-icons";
+import { VtuService } from "@/store/vtu-store";
 
 interface AirtimeModalProps {
   visible: boolean;
   onClose: () => void;
 }
 
+/**
+ * AirtimeModal - Dynamic airtime purchase modal
+ * Uses store data and server-provided markup percentages
+ * Implements proper transaction tracking and error handling
+ */
 export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
   const colors = useColors();
   const { user } = useAuthStore();
-  const [selectedService, setSelectedService] = useState<any>(null);
+  const [selectedService, setSelectedService] = useState<VtuService | null>(
+    null,
+  );
   const [phone, setPhone] = useState("");
   const [amount, setAmount] = useState("");
   const [showNetworkDropdown, setShowNetworkDropdown] = useState(false);
+  const [transactionReference, setTransactionReference] = useState<
+    string | null
+  >(null);
+
   const { addTransaction } = useTransactionStore();
-  const { airtimeServices, purchaseAirtime } = useVtuStore();
+  const { airtimeServices, purchaseAirtime, isLoading } = useVtuStore();
+  const { startPolling } = useTransactionPolling({ enabled: true });
 
-  // Use real airtime services from the store
-  const networks = airtimeServices.map((service) => ({
-    id: service.network || service.serviceID,
-    name: (service.network || service.serviceID || "").toUpperCase(),
-    description: service.description,
-    serviceID: service.serviceID,
-    network: service.network || service.serviceID,
-  }));
+  // Debug: Log airtime services data
+  console.log(
+    "🔍 AirtimeModal - airtimeServices:",
+    airtimeServices.length,
+    airtimeServices.slice(0, 2),
+  );
 
-  const fee = amount ? Math.round(Number(amount) * 0.1) : 0;
-  const total = amount ? Number(amount) + fee : 0;
+  // Derive networks dynamically from store data
+  const networks = useMemo(() => {
+    return airtimeServices.map((service) => ({
+      id: service.network || service.serviceID || "",
+      name: (service.network || service.serviceID || "").toUpperCase(),
+      description: service.description || `${service.network} Airtime`,
+      serviceID: service.serviceID,
+      network: service.network || service.serviceID,
+      markupPercentage: service.markupPercentage || 0,
+    }));
+  }, [airtimeServices]);
 
+  // Calculate markup using server-provided percentage
+  const calculateTotalWithMarkup = (
+    originalAmount: number,
+    markupPercentage: number,
+  ) => {
+    return markupPercentage > 0
+      ? originalAmount * (1 + markupPercentage / 100)
+      : originalAmount;
+  };
+
+  // Calculate fee and total using proper markup from selected service
+  const fee = useMemo(() => {
+    if (!amount || !selectedService) return 0;
+    const originalAmount = Number(amount);
+    const markupPercentage = selectedService.markupPercentage || 0;
+    const totalAmount = calculateTotalWithMarkup(
+      originalAmount,
+      markupPercentage,
+    );
+    return Math.round(totalAmount - originalAmount);
+  }, [amount, selectedService]);
+
+  const total = useMemo(() => {
+    if (!amount || !selectedService) return 0;
+    const originalAmount = Number(amount);
+    const markupPercentage = selectedService.markupPercentage || 0;
+    return calculateTotalWithMarkup(originalAmount, markupPercentage);
+  }, [amount, selectedService]);
+
+  /**
+   * Handle airtime purchase with proper transaction tracking
+   * Uses server-provided markup and generates unique reference
+   */
   const handleConfirmed = async () => {
-    if (!selectedService || !phone) return;
+    if (!selectedService || !phone || !amount) return;
+
+    // Generate unique transaction reference
+    const reference = `AIR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    setTransactionReference(reference);
+
+    const originalAmount = Number(amount);
+    const markupPercentage = selectedService.markupPercentage || 0;
+    const markedUpAmount = calculateTotalWithMarkup(
+      originalAmount,
+      markupPercentage,
+    );
 
     try {
-      // Call the VTU API to purchase airtime
-      await purchaseAirtime({
-        phone,
-        amount: Number(amount),
-        serviceID: selectedService.serviceID || selectedService.id,
-        network: selectedService.network || selectedService.id,
-        reference: `AIR-${Date.now()}`,
+      // Call VTU API with proper payload structure
+      const response = await purchaseAirtime({
+        serviceID: selectedService.serviceID,
+        amount: markedUpAmount, // Marked-up amount to charge user
+        originalAmount: originalAmount, // Original amount for API
+        mobileNumber: phone,
+        network: selectedService.network,
+        reference,
       });
 
-      // Update local state
-      addTransaction({
-        _id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      // Add transaction to local store with proper status tracking
+      const transaction = {
+        _id: reference,
         userId: user?.id || "unknown",
-        type: "airtime",
-        amount: total,
-        feeAmount: fee,
-        status: "completed",
-        reference: `AIR-${Date.now()}`,
+        type: "airtime" as const,
+        amount: markedUpAmount, // Amount charged to user
+        originalAmount: originalAmount, // Original airtime amount
+        feeAmount: fee, // Service fee
+        status: "pending" as const, // Start as pending, update based on server response
+        reference,
         fullName:
           `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "User",
         createdAt: new Date().toISOString(),
         details: {
           mobileNumber: phone,
-          network: selectedService.network || selectedService.id,
+          network: selectedService.network,
+          serviceID: selectedService.serviceID,
+          markupPercentage: markupPercentage,
         },
-      });
-    } catch (error) {
-      console.error("Airtime purchase failed:", error);
-      throw error; // Re-throw to let ServiceSheetModal handle it
-    }
+      };
 
-    setPhone("");
-    setAmount("");
-    setSelectedService(null);
+      addTransaction(transaction);
+
+      // Reset form on successful submission
+      setPhone("");
+      setAmount("");
+      setSelectedService(null);
+      setTransactionReference(null);
+    } catch (error: any) {
+      console.error("Airtime purchase failed:", error);
+
+      // Add failed transaction for tracking
+      addTransaction({
+        _id: reference,
+        userId: user?.id || "unknown",
+        type: "airtime" as const,
+        amount: markedUpAmount,
+        feeAmount: fee,
+        status: "failed" as const,
+        reference,
+        fullName:
+          `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "User",
+        createdAt: new Date().toISOString(),
+        details: {
+          mobileNumber: phone,
+          network: selectedService.network,
+          serviceID: selectedService.serviceID,
+          markupPercentage: markupPercentage,
+          error: error.message || "Purchase failed",
+        } as any, // Type assertion to allow error property
+      });
+
+      // Reset transaction reference on error
+      setTransactionReference(null);
+
+      // Re-throw error to let ServiceSheetModal handle display
+      throw error;
+    }
   };
 
+  /**
+   * Reset form state and close modal
+   */
   const handleClose = () => {
     setPhone("");
     setAmount("");
     setSelectedService(null);
+    setTransactionReference(null);
+    setShowNetworkDropdown(false);
     onClose();
+  };
+
+  /**
+   * Handle network selection with proper state reset
+   */
+  const handleNetworkChange = (network: any) => {
+    setSelectedService(network);
+    setShowNetworkDropdown(false);
+    setAmount(""); // Clear amount when switching services
   };
 
   return (
@@ -89,12 +202,12 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
       title="Airtime Top-up"
       subtitle="Complete the form below to purchase Airtime"
       proceedLabel={
-        amount
-          ? `Purchase ₦${Number(amount).toLocaleString()} Airtime`
-          : "Select Amount"
+        amount && selectedService
+          ? `Purchase ₦${total.toLocaleString()} Airtime`
+          : "Select Network & Amount"
       }
-      proceedDisabled={!phone || !amount}
-      onProceed={() => !!(phone && amount)}
+      proceedDisabled={!phone || !amount || !selectedService || isLoading}
+      onProceed={() => !!(phone && amount && selectedService)}
       onConfirmed={handleConfirmed}
     >
       {() => (
@@ -123,7 +236,9 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
                   },
                 ]}
               >
-                {selectedService ? selectedService.name : "Select Network"}
+                {selectedService
+                  ? selectedService.network?.toUpperCase()
+                  : "Select Network"}
               </Text>
               <Ionicons
                 name={showNetworkDropdown ? "chevron-up" : "chevron-down"}
@@ -142,38 +257,47 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
                   },
                 ]}
               >
-                {networks.map((network) => (
-                  <Pressable
-                    key={network.id}
-                    style={[
-                      styles.dropdownItem,
-                      {
-                        borderBottomColor: colors.border,
-                      },
-                    ]}
-                    onPress={() => {
-                      setSelectedService(network);
-                      setShowNetworkDropdown(false);
-                      setAmount(""); // Clear amount when switching services
-                    }}
-                  >
+                {networks.length > 0 ? (
+                  networks.map((network) => (
+                    <Pressable
+                      key={network.id}
+                      style={[
+                        styles.dropdownItem,
+                        {
+                          borderBottomColor: colors.border,
+                        },
+                      ]}
+                      onPress={() => handleNetworkChange(network)}
+                    >
+                      <Text
+                        style={[
+                          styles.dropdownItemText,
+                          { color: colors.textPrimary },
+                        ]}
+                      >
+                        {network.name}
+                      </Text>
+                      {selectedService?.serviceID === network.serviceID && (
+                        <Ionicons
+                          name="checkmark"
+                          size={16}
+                          color={colors.purple}
+                        />
+                      )}
+                    </Pressable>
+                  ))
+                ) : (
+                  <View style={styles.noServicesContainer}>
                     <Text
                       style={[
-                        styles.dropdownItemText,
-                        { color: colors.textPrimary },
+                        styles.noServicesText,
+                        { color: colors.textMuted },
                       ]}
                     >
-                      {network.name}
+                      No airtime services available
                     </Text>
-                    {selectedService?.id === network.id && (
-                      <Ionicons
-                        name="checkmark"
-                        size={16}
-                        color={colors.purple}
-                      />
-                    )}
-                  </Pressable>
-                ))}
+                  </View>
+                )}
               </View>
             )}
           </View>
@@ -195,7 +319,7 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
             keyboardType="number-pad"
           />
 
-          {amount ? (
+          {amount && selectedService ? (
             <View
               style={[
                 styles.feeBox,
@@ -206,7 +330,14 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
               ]}
             >
               <Text style={[styles.feeText, { color: colors.warning }]}>
-                10% fee: ₦{fee} · Total: ₦{total.toLocaleString()}
+                {selectedService.markupPercentage
+                  ? `${selectedService.markupPercentage}% service fee: ₦${fee} · Total: ₦${total.toLocaleString()}`
+                  : `Service fee: ₦${fee} · Total: ₦${total.toLocaleString()}`}
+              </Text>
+              <Text
+                style={[styles.originalAmountText, { color: colors.textMuted }]}
+              >
+                Airtime value: ₦{Number(amount).toLocaleString()}
               </Text>
             </View>
           ) : null}
@@ -244,12 +375,29 @@ const styles = StyleSheet.create({
   },
   dropdownItemText: { fontSize: 16, fontFamily: "Nunito_400Regular" },
   feeBox: {
-    flexDirection: "row",
-    gap: 8,
     padding: 12,
     borderRadius: 10,
     borderWidth: 1,
+    marginTop: 8,
+  },
+  feeText: {
+    fontSize: 12,
+    fontFamily: "Nunito_500Medium",
+    textAlign: "center",
+  },
+  originalAmountText: {
+    fontSize: 11,
+    fontFamily: "Nunito_400Regular",
+    textAlign: "center",
+    marginTop: 4,
+  },
+  noServicesContainer: {
+    padding: 20,
     alignItems: "center",
   },
-  feeText: { fontSize: 12, fontFamily: "Nunito_500Medium", flex: 1 },
+  noServicesText: {
+    fontSize: 14,
+    fontFamily: "Nunito_500Medium",
+    textAlign: "center",
+  },
 });
