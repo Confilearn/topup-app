@@ -122,6 +122,14 @@ export function DataModal({ visible, onClose }: DataModalProps) {
   const handleConfirmed = async () => {
     if (!selectedNetwork || !phone || !dataType || !selectedPlan) return;
 
+    // Validate phone number (must be numeric and valid Nigerian format)
+    const phoneRegex = /^(0[789][01]\d{8})$/;
+    if (!phoneRegex.test(phone.replace(/\s/g, ""))) {
+      throw new Error(
+        "Please enter a valid Nigerian phone number (e.g., 08012345678)",
+      );
+    }
+
     // Generate unique transaction reference
     const reference = `DATA-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     setTransactionReference(reference);
@@ -346,8 +354,13 @@ export function DataModal({ visible, onClose }: DataModalProps) {
             label="Phone Number"
             placeholder="08012345678"
             value={phone}
-            onChangeText={setPhone}
+            onChangeText={(text) => {
+              // Only allow numbers and remove all other characters
+              const numericValue = text.replace(/[^0-9]/g, "");
+              setPhone(numericValue);
+            }}
             keyboardType="phone-pad"
+            maxLength={11} // Nigerian phone numbers are max 11 digits
           />
 
           <View>

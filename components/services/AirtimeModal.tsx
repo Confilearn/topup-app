@@ -46,14 +46,18 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
 
   // Derive networks dynamically from store data
   const networks = useMemo(() => {
-    return airtimeServices.map((service) => ({
-      id: service.network || service.serviceID || "",
-      name: (service.network || service.serviceID || "").toUpperCase(),
-      description: service.description || `${service.network} Airtime`,
-      serviceID: service.serviceID,
-      network: service.network || service.serviceID,
-      markupPercentage: service.markupPercentage || 0,
-    }));
+    return airtimeServices
+      .filter((service) => service && (service.network || service.serviceID))
+      .map((service) => ({
+        id: service.network || service.serviceID || "",
+        name: (service.network || service.serviceID || "").toUpperCase(),
+        description:
+          service.description ||
+          `${service.network || service.serviceID || "Network"} Airtime`,
+        serviceID: service.serviceID,
+        network: service.network || service.serviceID,
+        markupPercentage: service.markupPercentage || 0,
+      }));
   }, [airtimeServices]);
 
   // Calculate markup using server-provided percentage
@@ -70,7 +74,7 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
   const fee = useMemo(() => {
     if (!amount || !selectedService) return 0;
     const originalAmount = Number(amount);
-    const markupPercentage = selectedService.markupPercentage || 0;
+    const markupPercentage = selectedService?.markupPercentage || 0;
     const totalAmount = calculateTotalWithMarkup(
       originalAmount,
       markupPercentage,
@@ -81,7 +85,7 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
   const total = useMemo(() => {
     if (!amount || !selectedService) return 0;
     const originalAmount = Number(amount);
-    const markupPercentage = selectedService.markupPercentage || 0;
+    const markupPercentage = selectedService?.markupPercentage || 0;
     return calculateTotalWithMarkup(originalAmount, markupPercentage);
   }, [amount, selectedService]);
 
@@ -92,12 +96,29 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
   const handleConfirmed = async () => {
     if (!selectedService || !phone || !amount) return;
 
+    // Validate phone number (must be numeric and valid Nigerian format)
+    const phoneRegex = /^(0[789][01]\d{8})$/;
+    if (!phoneRegex.test(phone.replace(/\s/g, ""))) {
+      throw new Error(
+        "Please enter a valid Nigerian phone number (e.g., 08012345678)",
+      );
+    }
+
+    // Validate amount (must be numeric and minimum ₦100)
+    const originalAmount = Number(amount);
+    if (isNaN(originalAmount) || originalAmount <= 0) {
+      throw new Error("Please enter a valid amount");
+    }
+
+    if (originalAmount < 100) {
+      throw new Error("Minimum airtime purchase is ₦100");
+    }
+
     // Generate unique transaction reference
     const reference = `AIR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     setTransactionReference(reference);
 
-    const originalAmount = Number(amount);
-    const markupPercentage = selectedService.markupPercentage || 0;
+    const markupPercentage = selectedService?.markupPercentage || 0;
     const markedUpAmount = calculateTotalWithMarkup(
       originalAmount,
       markupPercentage,
@@ -106,11 +127,11 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
     try {
       // Call VTU API with proper payload structure
       const response = await purchaseAirtime({
-        serviceID: selectedService.serviceID,
+        serviceID: selectedService?.serviceID || "",
         amount: markedUpAmount, // Marked-up amount to charge user
         originalAmount: originalAmount, // Original amount for API
         mobileNumber: phone,
-        network: selectedService.network,
+        network: selectedService?.network || "",
         reference,
       });
 
@@ -129,8 +150,8 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
         createdAt: new Date().toISOString(),
         details: {
           mobileNumber: phone,
-          network: selectedService.network,
-          serviceID: selectedService.serviceID,
+          network: selectedService?.network || "",
+          serviceID: selectedService?.serviceID || "",
           markupPercentage: markupPercentage,
         },
       };
@@ -159,8 +180,8 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
         createdAt: new Date().toISOString(),
         details: {
           mobileNumber: phone,
-          network: selectedService.network,
-          serviceID: selectedService.serviceID,
+          network: selectedService?.network || "",
+          serviceID: selectedService?.serviceID || "",
           markupPercentage: markupPercentage,
           error: error.message || "Purchase failed",
         } as any, // Type assertion to allow error property
@@ -195,6 +216,85 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
     setAmount(""); // Clear amount when switching services
   };
 
+  const styles = StyleSheet.create({
+    label: { fontSize: 14, fontFamily: "Nunito_600SemiBold", marginBottom: 8 },
+    dropdown: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderRadius: 8,
+      borderWidth: 1,
+    },
+    dropdownText: { fontSize: 16, fontFamily: "Nunito_400Regular" },
+    dropdownList: {
+      marginTop: 4,
+      borderRadius: 8,
+      borderWidth: 1,
+      zIndex: 1000,
+    },
+    dropdownItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+    },
+    dropdownItemText: { fontSize: 16, fontFamily: "Nunito_400Regular" },
+    feeBox: {
+      padding: 12,
+      borderRadius: 10,
+      borderWidth: 1,
+      marginTop: 8,
+    },
+    feeText: {
+      fontSize: 12,
+      fontFamily: "Nunito_500Medium",
+      textAlign: "center",
+    },
+    originalAmountText: {
+      fontSize: 11,
+      fontFamily: "Nunito_400Regular",
+      textAlign: "center",
+      marginTop: 4,
+    },
+    noServicesContainer: {
+      padding: 20,
+      alignItems: "center",
+    },
+    noServicesText: {
+      fontSize: 14,
+      fontFamily: "Nunito_500Medium",
+      textAlign: "center",
+    },
+    planContainer: {
+      flex: 1,
+    },
+    planPricing: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginTop: 2,
+    },
+    originalPrice: {
+      fontSize: 12,
+      fontFamily: "Nunito_400Regular",
+      textDecorationLine: "line-through",
+    },
+    currentPrice: {
+      fontSize: 14,
+      fontFamily: "Nunito_600SemiBold",
+    },
+    minimumText: {
+      fontSize: 12,
+      fontFamily: "Nunito_500Medium",
+      textAlign: "center",
+      marginTop: 4,
+    },
+  });
+
   return (
     <ServiceSheetModal
       visible={visible}
@@ -202,7 +302,7 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
       title="Airtime Top-up"
       subtitle="Complete the form below to purchase Airtime"
       proceedLabel={
-        amount && selectedService
+        amount && selectedService && total > 0
           ? `Purchase ₦${total.toLocaleString()} Airtime`
           : "Select Network & Amount"
       }
@@ -210,7 +310,7 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
       onProceed={() => !!(phone && amount && selectedService)}
       onConfirmed={handleConfirmed}
     >
-      {() => (
+      {(disabled) => (
         <>
           <View>
             <Text style={[styles.label, { color: colors.textPrimary }]}>
@@ -237,7 +337,9 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
                 ]}
               >
                 {selectedService
-                  ? selectedService.network?.toUpperCase()
+                  ? selectedService.network
+                    ? selectedService.network.toUpperCase()
+                    : "Unknown Network"
                   : "Select Network"}
               </Text>
               <Ionicons
@@ -275,7 +377,9 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
                           { color: colors.textPrimary },
                         ]}
                       >
-                        {network.name}
+                        {network.network
+                          ? network.network.toUpperCase()
+                          : "Unknown"}
                       </Text>
                       {selectedService?.serviceID === network.serviceID && (
                         <Ionicons
@@ -306,16 +410,31 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
             label="Phone Number"
             placeholder="08012345678"
             value={phone}
-            onChangeText={setPhone}
+            onChangeText={(text) => {
+              // Only allow numbers and remove all other characters
+              const numericValue = text.replace(/[^0-9]/g, "");
+              setPhone(numericValue);
+            }}
             keyboardType="phone-pad"
             testID="phone-input"
+            maxLength={11} // Nigerian phone numbers are max 11 digits
           />
 
           <Input
             label="Amount (₦)"
             placeholder="Enter amount"
             value={amount}
-            onChangeText={setAmount}
+            onChangeText={(text) => {
+              // Only allow numbers and decimal point
+              const numericValue = text.replace(/[^0-9.]/g, "");
+              // Ensure only one decimal point
+              const parts = numericValue.split(".");
+              if (parts.length > 2) {
+                setAmount(parts[0] + "." + parts.slice(1).join(""));
+              } else {
+                setAmount(numericValue);
+              }
+            }}
             keyboardType="number-pad"
           />
 
@@ -330,7 +449,7 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
               ]}
             >
               <Text style={[styles.feeText, { color: colors.warning }]}>
-                {selectedService.markupPercentage
+                {selectedService?.markupPercentage
                   ? `${selectedService.markupPercentage}% service fee: ₦${fee} · Total: ₦${total.toLocaleString()}`
                   : `Service fee: ₦${fee} · Total: ₦${total.toLocaleString()}`}
               </Text>
@@ -346,58 +465,3 @@ export function AirtimeModal({ visible, onClose }: AirtimeModalProps) {
     </ServiceSheetModal>
   );
 }
-
-const styles = StyleSheet.create({
-  label: { fontSize: 14, fontFamily: "Nunito_600SemiBold", marginBottom: 8 },
-  dropdown: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  dropdownText: { fontSize: 16, fontFamily: "Nunito_400Regular" },
-  dropdownList: {
-    marginTop: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    zIndex: 1000,
-  },
-  dropdownItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  dropdownItemText: { fontSize: 16, fontFamily: "Nunito_400Regular" },
-  feeBox: {
-    padding: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    marginTop: 8,
-  },
-  feeText: {
-    fontSize: 12,
-    fontFamily: "Nunito_500Medium",
-    textAlign: "center",
-  },
-  originalAmountText: {
-    fontSize: 11,
-    fontFamily: "Nunito_400Regular",
-    textAlign: "center",
-    marginTop: 4,
-  },
-  noServicesContainer: {
-    padding: 20,
-    alignItems: "center",
-  },
-  noServicesText: {
-    fontSize: 14,
-    fontFamily: "Nunito_500Medium",
-    textAlign: "center",
-  },
-});

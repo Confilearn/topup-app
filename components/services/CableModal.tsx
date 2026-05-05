@@ -98,6 +98,12 @@ export function CableModal({ visible, onClose }: CableModalProps) {
   const handleConfirmed = async () => {
     if (!selectedProvider || !selectedPlan || !smartCardNumber) return;
 
+    // Validate smart card number (must be numeric and reasonable length)
+    const smartCardRegex = /^\d{10,12}$/;
+    if (!smartCardRegex.test(smartCardNumber.replace(/\s/g, ""))) {
+      throw new Error("Please enter a valid smart card number (10-12 digits)");
+    }
+
     // Generate unique transaction reference
     const reference = `CABLE-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     setTransactionReference(reference);
@@ -251,7 +257,7 @@ export function CableModal({ visible, onClose }: CableModalProps) {
                 ]}
               >
                 {selectedProvider
-                  ? selectedProvider.provider || selectedProvider.name
+                  ? selectedProvider.provider || selectedProvider.serviceID
                   : "Select Provider"}
               </Text>
               <Ionicons
@@ -288,7 +294,7 @@ export function CableModal({ visible, onClose }: CableModalProps) {
                         { color: colors.textPrimary },
                       ]}
                     >
-                      {provider.provider || provider.name}
+                      {provider.provider || provider.serviceID}
                     </Text>
                     {selectedProvider?.serviceID === provider.serviceID && (
                       <Ionicons
@@ -307,8 +313,13 @@ export function CableModal({ visible, onClose }: CableModalProps) {
             label="Smart Card Number"
             placeholder="Enter smart card number"
             value={smartCardNumber}
-            onChangeText={setSmartCardNumber}
+            onChangeText={(text) => {
+              // Only allow numbers and remove all other characters
+              const numericValue = text.replace(/[^0-9]/g, "");
+              setSmartCardNumber(numericValue);
+            }}
             keyboardType="number-pad"
+            maxLength={12} // Smart card numbers are max 12 digits
           />
 
           <View>

@@ -100,8 +100,18 @@ export function ElectricityModal({ visible, onClose }: ElectricityModalProps) {
   const handleConfirmed = async () => {
     if (!selectedService || !meterNumber || !meterType || !amount) return;
 
-    // Validate minimum amount for electricity (₦1,000)
+    // Validate meter number (must be numeric and reasonable length)
+    const meterNumberRegex = /^\d{6,12}$/;
+    if (!meterNumberRegex.test(meterNumber.replace(/\s/g, ""))) {
+      throw new Error("Please enter a valid meter number (6-12 digits)");
+    }
+
+    // Validate amount (must be numeric and minimum ₦1,000)
     const originalAmount = Number(amount);
+    if (isNaN(originalAmount) || originalAmount <= 0) {
+      throw new Error("Please enter a valid amount");
+    }
+
     if (originalAmount < 1000) {
       throw new Error("Minimum amount for electricity bills is ₦1,000");
     }
@@ -348,8 +358,13 @@ export function ElectricityModal({ visible, onClose }: ElectricityModalProps) {
             label="Meter Number"
             placeholder="Enter meter number"
             value={meterNumber}
-            onChangeText={setMeterNumber}
+            onChangeText={(text) => {
+              // Only allow numbers and remove all other characters
+              const numericValue = text.replace(/[^0-9]/g, "");
+              setMeterNumber(numericValue);
+            }}
             keyboardType="number-pad"
+            maxLength={12} // Meter numbers are max 12 digits
           />
 
           <View>
@@ -437,7 +452,17 @@ export function ElectricityModal({ visible, onClose }: ElectricityModalProps) {
             <Input
               placeholder="Enter amount"
               value={amount}
-              onChangeText={setAmount}
+              onChangeText={(text) => {
+                // Only allow numbers and decimal point
+                const numericValue = text.replace(/[^0-9.]/g, "");
+                // Ensure only one decimal point
+                const parts = numericValue.split(".");
+                if (parts.length > 2) {
+                  setAmount(parts[0] + "." + parts.slice(1).join(""));
+                } else {
+                  setAmount(numericValue);
+                }
+              }}
               keyboardType="number-pad"
             />
             <Text style={[styles.minimumText, { color: colors.warning }]}>

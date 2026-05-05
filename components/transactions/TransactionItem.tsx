@@ -69,18 +69,24 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
         return "Wallet Deposit";
       case "airtime":
         return details?.network
-          ? `${details.network} Airtime`
+          ? `${capitalize(details.network)} Airtime`
           : "Airtime Recharge";
       case "data":
-        return details?.network ? `${details.network} Data` : "Data Purchase";
+        return details?.network
+          ? `${capitalize(details.network)} Data`
+          : "Data Purchase";
       case "electricity":
         return details?.provider
-          ? `${details.provider} Electricity`
+          ? `${capitalize(details.provider)} Electricity`
           : "Electricity Bill";
       case "cable":
         return details?.provider
-          ? `${details.provider} TV`
+          ? `${capitalize(details.provider)} TV`
           : "Cable Subscription";
+
+        function capitalize(str: string) {
+          return str.charAt(0).toUpperCase() + str.slice(1);
+        }
       default:
         // Explicitly cast to string to avoid TypeScript errors
         const typeString = type as string;
