@@ -97,7 +97,6 @@ export default function AddMoneyScreen() {
 
   return (
     <SafeAreaView
-      mode="margin"
       style={[styles.container, { backgroundColor: colors.bgPrimary }]}
     >
       <ScrollView

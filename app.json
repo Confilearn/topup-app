@@ -18,7 +18,12 @@
       "bundleIdentifier": "com.topupafrica"
     },
     "android": {
-      "package": "com.topupafrica"
+      "package": "com.topupafrica",
+      "splash": {
+        "image": "./assets/images/splash-icon.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#080818"
+      }
     },
     "web": {
       "favicon": "./assets/images/icon.png"

@@ -12,18 +12,20 @@ import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { StatusBar } from "expo-status-bar";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "react-native";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { OfflineModal } from "@/components/OfflineModal";
 import { useThemeStore } from "@/store/themeStore";
 import { useNetInfoStore } from "@/store/netInfoStore";
+import { useColors } from "@/hooks/useTheme";
 import { queryClient } from "@/lib/query-client";
 
 SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav() {
   const { isDark } = useThemeStore();
+  const colors = useColors();
   const initializeNetInfo = useNetInfoStore((state) => state.initializeNetInfo);
 
   useEffect(() => {
@@ -35,11 +37,16 @@ function RootLayoutNav() {
   }, [initializeNetInfo]);
 
   return (
-    <>
+    <SafeAreaView
+      style={{
+        flex: 1,
+        backgroundColor: isDark ? colors.bgPrimary : colors.bgSecondary,
+      }}
+    >
       <StatusBar
-        style={isDark ? "light" : "dark"}
-        backgroundColor={isDark ? "#080818" : "#ffffff"}
-        translucent={false}
+        barStyle={isDark ? "light-content" : "dark-content"}
+        backgroundColor="transparent"
+        translucent={true}
       />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
@@ -48,7 +55,7 @@ function RootLayoutNav() {
         <Stack.Screen name="transaction" />
       </Stack>
       <OfflineModal />
-    </>
+    </SafeAreaView>
   );
 }
 
@@ -73,9 +80,11 @@ export default function RootLayout() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <GestureHandlerRootView style={{ flex: 1 }}>
-          <KeyboardProvider>
-            <RootLayoutNav />
-          </KeyboardProvider>
+          <SafeAreaProvider>
+            <KeyboardProvider>
+              <RootLayoutNav />
+            </KeyboardProvider>
+          </SafeAreaProvider>
         </GestureHandlerRootView>
       </QueryClientProvider>
     </ErrorBoundary>

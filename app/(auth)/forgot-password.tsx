@@ -62,7 +62,6 @@ export default function ForgotPasswordScreen() {
 
   return (
     <SafeAreaView
-      mode="margin"
       style={[
         styles.container,
         {
