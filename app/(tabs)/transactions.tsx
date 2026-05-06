@@ -10,7 +10,6 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useTheme";
 import { AppHeader } from "@/components/ui/AppHeader";
@@ -103,9 +102,7 @@ export default function TransactionsScreen() {
   };
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.bgPrimary }]}
-    >
+    <View style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
       <ScrollView
         ref={scrollRef}
         showsVerticalScrollIndicator={false}
@@ -208,7 +205,7 @@ export default function TransactionsScreen() {
           />
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

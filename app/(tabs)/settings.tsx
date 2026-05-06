@@ -10,7 +10,6 @@ import {
   Switch,
 } from "react-native";
 import { router } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
@@ -342,9 +341,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.bgPrimary }]}
-    >
+    <View style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
       <ScrollView
         ref={scrollRef}
         showsVerticalScrollIndicator={false}
@@ -924,7 +921,7 @@ export default function SettingsScreen() {
           </View>
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 

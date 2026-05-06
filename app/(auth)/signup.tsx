@@ -9,7 +9,6 @@ import {
   KeyboardAvoidingView,
 } from "react-native";
 import { router } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useTheme";
@@ -108,7 +107,7 @@ export default function SignupScreen() {
   const update = (key: string, val: string) =>
     setForm((f) => ({ ...f, [key]: val }));
   return (
-    <SafeAreaView
+    <View
       style={[
         styles.container,
         {
@@ -294,7 +293,7 @@ export default function SignupScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 

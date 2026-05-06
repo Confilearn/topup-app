@@ -8,7 +8,6 @@ import {
   Platform,
   Share,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useTheme";
@@ -183,9 +182,7 @@ export default function ReferralsScreen() {
   };
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.bgPrimary }]}
-    >
+    <View style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
@@ -469,7 +466,7 @@ export default function ReferralsScreen() {
           onClose={() => setResult(null)}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 

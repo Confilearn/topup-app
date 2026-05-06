@@ -10,7 +10,6 @@ import {
   Platform,
   Clipboard,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import * as Haptics from "expo-haptics";
@@ -130,9 +129,7 @@ export default function TransactionDetailsScreen() {
 
   if (!transaction) {
     return (
-      <SafeAreaView
-        style={[styles.container, { backgroundColor: colors.bgPrimary }]}
-      >
+      <View style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
@@ -151,7 +148,7 @@ export default function TransactionDetailsScreen() {
             )}
           </Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -175,9 +172,7 @@ export default function TransactionDetailsScreen() {
   };
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.bgPrimary }]}
-    >
+    <View style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
@@ -569,7 +564,7 @@ export default function TransactionDetailsScreen() {
         onClose={() => setShowCopyModal(false)}
         copiedText={copiedText}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

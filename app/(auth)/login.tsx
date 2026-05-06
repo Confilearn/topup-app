@@ -10,7 +10,6 @@ import {
   KeyboardAvoidingView,
 } from "react-native";
 import { router } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useTheme";
@@ -75,7 +74,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView
+    <View
       style={[
         styles.container,
         {
@@ -236,7 +235,7 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 

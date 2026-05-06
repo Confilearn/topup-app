@@ -8,7 +8,6 @@ import {
   Pressable,
   Platform,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useTheme";
@@ -107,9 +106,7 @@ export default function ServicesScreen() {
   );
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.bgPrimary }]}
-    >
+    <View style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
       <ScrollView
         ref={scrollRef}
         showsVerticalScrollIndicator={false}
@@ -223,7 +220,7 @@ export default function ServicesScreen() {
         onClose={() => setUnavailableService(null)}
         serviceName={unavailableService || ""}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

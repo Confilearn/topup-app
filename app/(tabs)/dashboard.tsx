@@ -10,7 +10,6 @@ import {
   RefreshControl,
 } from "react-native";
 import { router } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -199,9 +198,7 @@ export default function DashboardScreen() {
   };
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.bgPrimary }]}
-    >
+    <View style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
       <ScrollView
         ref={scrollRef}
         showsVerticalScrollIndicator={false}
@@ -375,7 +372,7 @@ export default function DashboardScreen() {
         onClose={() => setUnavailableService(null)}
         serviceName={unavailableService || ""}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
