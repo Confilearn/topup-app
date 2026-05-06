@@ -144,7 +144,11 @@ export default function TransactionDetailsScreen() {
         </View>
         <View style={styles.centered}>
           <Text style={[styles.notFound, { color: colors.textMuted }]}>
-            {isLoading ? "Loading..." : "Transaction not found"}
+            {isLoading ? (
+              <Text>Loading...</Text>
+            ) : (
+              <Text>Transaction not found</Text>
+            )}
           </Text>
         </View>
       </SafeAreaView>
@@ -204,11 +208,14 @@ export default function TransactionDetailsScreen() {
             {new Date(transaction.createdAt).toLocaleString("en-NG")}
           </Text>
           <Text style={[styles.heroAmount, { color: colors.textPrimary }]}>
-            ₦{transaction.amount.toLocaleString()}
+            <Text>₦</Text>
+            {transaction.amount.toLocaleString()}
           </Text>
           {transaction.feeAmount && transaction.feeAmount > 0 && (
             <Text style={[styles.heroFee, { color: colors.textMuted }]}>
-              (₦{baseAmount.toLocaleString()} + ₦{transaction.feeAmount} fees)
+              <Text>₦</Text>
+              {baseAmount.toLocaleString()} + <Text>₦</Text>
+              {transaction.feeAmount} fees)
             </Text>
           )}
           <View
@@ -336,7 +343,7 @@ export default function TransactionDetailsScreen() {
               {transaction.feeAmount && transaction.feeAmount > 0 && (
                 <InfoRow
                   {...infoProps}
-                  label={`Service Fee (${transaction.feePercentage || 0}%)`}
+                  label={`Service Fee (${transaction.feePercentage || 0})%`}
                   value={`-₦${transaction.feeAmount.toLocaleString()}`}
                   valueColor={colors.error}
                 />
@@ -353,7 +360,7 @@ export default function TransactionDetailsScreen() {
                   Amount Credited
                 </Text>
                 <Text style={[styles.totalValue, { color: colors.success }]}>
-                  ₦
+                  <Text>₦</Text>
                   {(
                     transaction.netAmount || transaction.amount
                   ).toLocaleString()}
@@ -374,7 +381,7 @@ export default function TransactionDetailsScreen() {
               {transaction.feeAmount && transaction.feeAmount > 0 && (
                 <InfoRow
                   {...infoProps}
-                  label={`Service Fee (${transaction.feePercentage || 0}%)`}
+                  label={`Service Fee (${transaction.feePercentage || 0})%`}
                   value={`+₦${transaction.feeAmount.toLocaleString()}`}
                   valueColor={colors.error}
                 />
@@ -383,7 +390,7 @@ export default function TransactionDetailsScreen() {
               {transaction.profitAmount && transaction.profitAmount > 0 && (
                 <InfoRow
                   {...infoProps}
-                  label={`Service Charge (${transaction.markupPercentage || 0}%)`}
+                  label={`Service Charge (${transaction.markupPercentage || 0})%`}
                   value={`+₦${transaction.profitAmount.toLocaleString()}`}
                   valueColor={colors.error}
                 />
@@ -400,7 +407,8 @@ export default function TransactionDetailsScreen() {
                   Total Charged
                 </Text>
                 <Text style={[styles.totalValue, { color: colors.error }]}>
-                  ₦{transaction.amount.toLocaleString()}
+                  <Text>₦</Text>
+                  {transaction.amount.toLocaleString()}
                 </Text>
               </View>
             </>
